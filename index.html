@@ -82,11 +82,11 @@ body{background:var(--bg)}.app{background:var(--bg)}.sidebar{display:none!import
 <section class="chat-scroll" id="chatScroll" aria-live="polite">
 <div class="welcome" id="welcome"><div id="referenceHome"><div class="home-feature-title">Premium Features <button class="plain-link" id="viewAllFeatures" style="float:right">View all ›</button></div><div class="home-features">
 <button class="home-feature tall" data-home-tool="photo"><span class="tile-icon">✥</span><span class="tile-copy"><strong>Photo Design</strong><small>Create stunning photo-edit prompts</small></span></button>
-<button class="home-feature" data-home-tool="web"><span class="tile-icon blue">◎</span><span class="tile-copy"><strong>Web Research</strong><small>Research topics with AI assistance</small></span></button>
-<button class="home-feature" data-home-tool="video"><span class="tile-icon">▶</span><span class="tile-copy"><strong>Video Summary</strong><small>Summarize a transcript or notes</small></span></button>
+<button class="home-feature" data-home-tool="web"><span class="tile-icon blue">◎</span><span class="tile-copy"><strong>Web Research</strong><small>Research with Google Search grounding</small></span></button>
+<button class="home-feature" data-home-tool="video"><span class="tile-icon">▶</span><span class="tile-copy"><strong>Video Summary</strong><small>Summarize supported video links or transcripts</small></span></button>
 <button class="home-feature document" data-home-tool="document"><span class="tile-icon purple">▣</span><span class="tile-copy"><strong>Document Processing</strong><small>Summarize text documents</small></span></button></div>
 <div class="tools-title">Useful Tools</div><div class="home-tools">
-<button class="home-tool" data-home-tool="image"><span class="tile-icon pink">✧</span><strong>Image Generator</strong><small>Create a detailed image prompt (image generation not connected yet)</small></button>
+<button class="home-tool" data-home-tool="image"><span class="tile-icon pink">✧</span><strong>Image Generator</strong><small>Generate images with supported Gemini image models</small></button>
 <button class="home-tool" data-home-tool="email"><span class="tile-icon gold">✉</span><strong>Email Assistant</strong><small>Draft or improve professional emails</small></button></div>
 <div class="suggestion-heading">Suggestions</div><div class="suggestion-tabs" id="refSuggestionTabs"><button class="active" data-ref-cat="all">All</button><button data-ref-cat="explore">Explore</button><button data-ref-cat="fun">For fun</button><button data-ref-cat="creative">Creativity</button><button data-ref-cat="study">Study</button></div></div><div class="welcome-icon">✳</div><h1>What’s on your mind?</h1><p>স্বাগতম OpenChat AI-তে। প্রশ্ন করুন, আইডিয়া সাজান, কিংবা নতুন কিছু শেখা শুরু করুন।</p>
 <div class="suggestions">
@@ -129,10 +129,10 @@ $('chatForm').addEventListener('submit',async e=>{e.preventDefault();const text=
 let activeTool=null;
 const toolModes={
  photo:{title:'Photo Design',placeholder:'ছবির বর্ণনা ও কী পরিবর্তন চান লিখুন…',instruction:'Help the user create a precise photo-editing plan or prompt. Do not claim to have seen an image unless one was provided.'},
- web:{title:'Web Research',placeholder:'কোন বিষয়টি নিয়ে গবেষণা করতে চান লিখুন…',instruction:'Give a structured overview from your knowledge, distinguish facts from uncertainty, and clearly state that live web browsing is unavailable in this app. Never pretend you searched the web.'},
- video:{title:'Video Summary',placeholder:'ভিডিওর transcript বা নোট পেস্ট করুন…',instruction:'Summarize only transcript or notes the user provides. If given only a video URL, explain that this app cannot fetch video contents from the URL alone.'},
+ web:{title:'Web Research',placeholder:'কোন বিষয়টি নিয়ে গবেষণা করতে চান লিখুন…',instruction:'Research the topic using Google Search grounding when available. Summarize key findings, include source URLs when returned, distinguish facts from uncertainty, and say if live search is unavailable.'},
+ video:{title:'Video Summary',placeholder:'ভিডিওর transcript বা নোট পেস্ট করুন…',instruction:'If the user provides a public YouTube URL, summarize the video when the connected Gemini API supports video input. Otherwise ask for transcript or notes; never invent video contents.'},
  document:{title:'Document Processing',placeholder:'ডকুমেন্টের লেখা এখানে পেস্ট করুন…',instruction:'Summarize, explain, extract key points, translate, or rewrite document text supplied by the user. If no text is supplied, ask the user to paste it.'},
- image:{title:'Image Prompt Maker',placeholder:'কেমন ছবি তৈরি করতে চান বর্ণনা করুন…',instruction:'Turn the user idea into a detailed image-generation prompt including subject, composition, lighting, style, and negative constraints. Explain that this app does not yet generate image files directly.'},
+ image:{title:'Image Prompt Maker',placeholder:'কেমন ছবি তৈরি করতে চান বর্ণনা করুন…',instruction:'Generate an image from the user request using the connected Gemini image model when available. If image generation is unavailable, explain the provider/model access limitation and offer a detailed prompt as fallback.'},
  email:{title:'Email Assistant',placeholder:'ইমেইলের উদ্দেশ্য, প্রাপক ও টোন লিখুন…',instruction:'Draft a complete professional email with subject when useful. Ask for missing essential details and match the requested language and tone.'}
 };
 function setTool(id){const mode=toolModes[id];if(!mode)return;activeTool=id;prompt.placeholder=mode.placeholder;prompt.value='';resizePrompt();prompt.focus();notify(mode.title+' চালু হয়েছে — প্রয়োজনীয় তথ্য লিখে Send চাপুন।')}
