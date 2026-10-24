@@ -34,27 +34,49 @@ async function fetchWithTimeout(url, options, timeoutMs = 45000) {
 }
 
 async function callGemini(apiKey, messages) {
-  const contents = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-  const body = JSON.stringify({
+  const lastUser = [...messages].reverse().find(m => m.role === "user")?.content || "";
+  const isWeb = /Tool:\\s*Web Research/i.test(lastUser);
+  const isVideo = /Tool:\\s*Video Summary/i.test(lastUser);
+  const isImage = /Tool:\\s*Image Prompt Maker/i.test(lastUser);
+  const videoMatch = lastUser.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=[\\w-]+|youtu\\.be\\/[\\w-]+)/i);
+  const cleanPrompt = lastUser.replace(/^Tool:[^\\n]*(?:\\n|\\\\n)Instructions:[^\\n]*(?:\\n|\\\\n)User request:\\s*/i, "").trim();
+  if (isVideo && !videoMatch) {
+    const textOnly = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+    return { reply: "ভিডিও সারাংশের জন্য একটি পাবলিক YouTube URL দিন, অথবা ভিডিওর transcript/নোট পেস্ট করুন।" };
+  }
+  const parts = [{ text: isImage ? "Create an image based on this request. Return a generated image, not just a prompt. User request: " + cleanPrompt : messages[messages.length - 1].content }];
+  if (isVideo && videoMatch) parts.unshift({ file_data: { file_uri: videoMatch[0] } });
+  const contents = isVideo && videoMatch
+    ? [{ role: "user", parts }]
+    : messages.map((m, i) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+  const bodyObject = {
     systemInstruction: { parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate. Format answers clearly with Markdown when useful." }] },
     contents,
     generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-  });
-  const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"];
+  };
+  if (isWeb) bodyObject.tools = [{ google_search: {} }];
+  const models = isImage
+    ? ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"]
+    : ["gemini-3.8-flash", "gemini-3.6-flash"];
   let upstream;
   for (let i = 0; i < models.length; i++) {
-    for (let attempt = 0; attempt < (i === 0 ? 2 : 1); attempt++) {
-      upstream = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + models[i] + ":generateContent", {
-        method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" }, body
-      });
-      if (upstream.status !== 503 || attempt === 1) break;
-      await new Promise(resolve => setTimeout(resolve, 700));
-    }
-    if (upstream.status !== 503) break;
+    upstream = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + models[i] + ":generateContent", {
+      method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify(bodyObject)
+    }, 90000);
+    if (upstream.status !== 503 && !(isImage && upstream.status === 404)) break;
   }
   const data = await upstream.json().catch(() => ({}));
   if (!upstream.ok) throw new Error(providerError("Gemini", upstream.status, data.error?.message));
-  return data.candidates?.[0]?.content?.parts?.map(p => typeof p.text === "string" ? p.text : "").join("").trim();
+  const responseParts = data.candidates?.[0]?.content?.parts || [];
+  const imagePart = responseParts.find(p => p.inline_data?.data || p.inlineData?.data);
+  const imageData = imagePart ? {
+    mimeType: imagePart.inline_data?.mime_type || imagePart.inlineData?.mimeType || "image/png",
+    data: imagePart.inline_data?.data || imagePart.inlineData?.data
+  } : null;
+  const reply = responseParts.map(p => typeof p.text === "string" ? p.text : "").filter(Boolean).join("\\n").trim();
+  if (isImage && !imageData && !reply) throw new Error("এই API account-এ image generation চালু নেই বা মডেলটি উপলভ্য নয়। Google AI Studio-র model access ও quota যাচাই করুন।");
+  return { reply: reply || (imageData ? "ছবি তৈরি হয়েছে।" : ""), imageData };
 }
 
 async function callOpenAI(apiKey, messages, model) {
