@@ -61,7 +61,7 @@ modelButton.addEventListener('click',e=>{e.stopPropagation();const open=!modelMe
 modelMenu.addEventListener('click',e=>{const option=e.target.closest('[data-model]');if(!option)return;selectedModel=option.dataset.model;$('modelName').textContent=selectedModel;modelMenu.querySelectorAll('[data-model]').forEach(el=>{const selected=el===option;el.setAttribute('aria-selected',String(selected));el.lastElementChild.textContent=selected?'✓':''});closeMenu()});
 document.addEventListener('click',e=>{if(!modelMenu.contains(e.target)&&!modelButton.contains(e.target))closeMenu()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
-function newChat(){messages.replaceChildren();messages.hidden=true;welcome.hidden=false;prompt.value='';resizePrompt();prompt.focus()}
+function newChat(){messages.replaceChildren();messages.hidden=true;welcome.hidden=false;conversation.length=0;prompt.value='';resizePrompt();prompt.focus()}
 $('newChat').addEventListener('click',newChat);$('mobileNew').addEventListener('click',newChat);
 $('historyLink').addEventListener('click',()=>notify('এই ডেমোতে conversation history সংরক্ষিত হয় না।'));
 $('aboutLink').addEventListener('click',()=>notify('OpenChat AI হলো একটি নতুন, responsive chat interface।'));
