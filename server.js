@@ -35,20 +35,24 @@ async function fetchWithTimeout(url, options, timeoutMs = 45000) {
 
 async function callGemini(apiKey, messages) {
   const lastUser = [...messages].reverse().find(m => m.role === "user")?.content || "";
-  const isWeb = /Tool:\\s*Web Research/i.test(lastUser);
-  const isVideo = /Tool:\\s*Video Summary/i.test(lastUser);
-  const isImage = /Tool:\\s*Image Prompt Maker/i.test(lastUser);
-  const videoMatch = lastUser.match(/https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?v=[\\w-]+|youtu\\.be\\/[\\w-]+)/i);
-  const cleanPrompt = lastUser.replace(/^Tool:[^\\n]*(?:\\n|\\\\n)Instructions:[^\\n]*(?:\\n|\\\\n)User request:\\s*/i, "").trim();
+  const isWeb = lastUser.includes("Tool: Web Research");
+  const isVideo = lastUser.includes("Tool: Video Summary");
+  const isImage = lastUser.includes("Tool: Image Prompt Maker");
+  const videoMatch = lastUser.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?[^\s]+|youtu\.be\/[\w-]+)/i);
+  const cleanPrompt = lastUser.includes("User request:") ? lastUser.split("User request:").slice(1).join("User request:").trim() : lastUser;
   if (isVideo && !videoMatch) {
-    const textOnly = messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
     return { reply: "ভিডিও সারাংশের জন্য একটি পাবলিক YouTube URL দিন, অথবা ভিডিওর transcript/নোট পেস্ট করুন।" };
   }
-  const parts = [{ text: isImage ? "Create an image based on this request. Return a generated image, not just a prompt. User request: " + cleanPrompt : messages[messages.length - 1].content }];
-  if (isVideo && videoMatch) parts.unshift({ file_data: { file_uri: videoMatch[0] } });
+  const parts = [{ text: isImage
+    ? "Generate an image from this request. Return an image if image generation is available. User request: " + cleanPrompt
+    : lastUser }];
+  if (isVideo && videoMatch) {
+    parts[0] = { text: "Summarize this video in the user's language. Include key points and a short summary." };
+    parts.unshift({ file_data: { file_uri: videoMatch[0] } });
+  }
   const contents = isVideo && videoMatch
     ? [{ role: "user", parts }]
-    : messages.map((m, i) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+    : messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
   const bodyObject = {
     systemInstruction: { parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate. Format answers clearly with Markdown when useful." }] },
     contents,
@@ -74,7 +78,7 @@ async function callGemini(apiKey, messages) {
     mimeType: imagePart.inline_data?.mime_type || imagePart.inlineData?.mimeType || "image/png",
     data: imagePart.inline_data?.data || imagePart.inlineData?.data
   } : null;
-  const reply = responseParts.map(p => typeof p.text === "string" ? p.text : "").filter(Boolean).join("\\n").trim();
+  const reply = responseParts.map(p => typeof p.text === "string" ? p.text : "").filter(Boolean).join("\n").trim();
   if (isImage && !imageData && !reply) throw new Error("এই API account-এ image generation চালু নেই বা মডেলটি উপলভ্য নয়। Google AI Studio-র model access ও quota যাচাই করুন।");
   return { reply: reply || (imageData ? "ছবি তৈরি হয়েছে।" : ""), imageData };
 }
