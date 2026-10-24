@@ -18,8 +18,8 @@ app.post("/api/chat", async (req, res) => {
   }
 
   const body = req.body && typeof req.body === "object" ? req.body : {};
-  const requestedModel = typeof body.model === "string" ? body.model : "gemini-2.5-flash";
-  if (requestedModel !== "gemini-2.5-flash") {
+  const requestedModel = typeof body.model === "string" ? body.model : "gemini-3.8-flash";
+  if (requestedModel !== "gemini-3.8-flash") {
     return res.status(400).json({ error: "আপাতত শুধু Gemini Flash মডেলটি সংযুক্ত আছে।" });
   }
 
@@ -42,7 +42,7 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
     const upstream = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -67,7 +67,7 @@ app.post("/api/chat", async (req, res) => {
         : upstream.status === 429
           ? "Gemini-এর ফ্রি ব্যবহারের সীমা আপাতত শেষ হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।"
           : upstream.status === 404
-            ? "Gemini মডেলটি পাওয়া যায়নি। Google AI Studio-তে Gemini 2.5 Flash access যাচাই করুন।"
+            ? "Gemini মডেলটি পাওয়া যায়নি। Google AI Studio-তে Gemini 3.8 Flash access যাচাই করুন।"
             : upstream.status === 400
               ? "Gemini request গ্রহণ করেনি। মেসেজের ফরম্যাট বা API configuration যাচাই করতে হবে।"
               : "Gemini থেকে উত্তর পাওয়া যায়নি (HTTP " + upstream.status + ")। Render logs-এ বিস্তারিত দেখা যাবে।";
