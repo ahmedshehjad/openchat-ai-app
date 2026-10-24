@@ -12,7 +12,7 @@ const MODEL_CONFIG = {
   "Claude": { provider: "anthropic", model: "claude-sonnet-4-20250514", key: "ANTHROPIC_API_KEY" },
   "Gemini": { provider: "gemini", model: "gemini-3.8-flash", key: "GEMINI_API_KEY" },
   "OpenRouter Free (Auto)": { provider: "openrouter", model: "openrouter/free", key: "OPENROUTER_API_KEY" },
-  "Flint Coding (Free)": { provider: "openrouter", model: "recursive/flint:free", key: "OPENROUTER_API_KEY" },
+  "Flint Coding (Free)": { provider: "openrouter", model: "recursive/flint-v1.0:free", key: "OPENROUTER_API_KEY" },
   "North Mini Code (Free)": { provider: "openrouter", model: "cohere/north-mini-code:free", key: "OPENROUTER_API_KEY" },
   "Nemotron 3.5 Super VL (Free)": { provider: "openrouter", model: "nvidia/nemotron-3.5-super-vl:free", key: "OPENROUTER_API_KEY" }
 };
