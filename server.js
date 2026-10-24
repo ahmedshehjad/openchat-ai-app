@@ -81,14 +81,15 @@ app.get("/api/chat", (_req, res) => {
   return res.status(405).json({ error: "শুধু POST request গ্রহণ করা হয়।" });
 });
 
-app.use(express.static(path.join(__dirname), {
-  index: "index.html",
-  dotfiles: "ignore"
-}));
-
-app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api/")) return next();
+app.get("/", (_req, res) => {
   return res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ error: "API endpoint পাওয়া যায়নি।" });
+  }
+  return res.status(404).send("Not found");
 });
 
 app.listen(PORT, "0.0.0.0", () => {
