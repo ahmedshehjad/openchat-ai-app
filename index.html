@@ -29,12 +29,12 @@
 <div class="model-wrap"><button class="model-button" id="modelButton" aria-haspopup="listbox" aria-expanded="false"><span id="modelName">OpenChat Demo</span><span class="chevron">⌄</span></button>
 <div class="model-menu" id="modelMenu" role="listbox" aria-label="Choose model">
 <div class="model-note">CHOOSE A MODEL</div>
-<button class="model-option" role="option" aria-selected="true" data-model="OpenChat Demo">OpenChat Demo <span>✓</span></button>
+<button class="model-option" role="option" aria-selected="true" data-model="Gemini Flash (Free)">Gemini Flash (Free) <span>✓</span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="GPT-4o">GPT-4o <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Claude">Claude <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Gemini">Gemini <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Llama">Llama <span></span></button>
-<div class="model-note">Provider models need an API connection.</div></div></div></div>
+<div class="model-note">Gemini free tier-এর সীমা প্রযোজ্য।</div></div></div></div>
 <div class="status"><span class="dot"></span><span class="status-label">Interface ready</span></div>
 </header>
 <section class="chat-scroll" id="chatScroll" aria-live="polite">
@@ -47,7 +47,7 @@
 </div></div>
 <div class="messages" id="messages" hidden></div>
 </section>
-<div class="composer-area"><form class="composer" id="chatForm"><textarea id="prompt" rows="1" placeholder="মেসেজ লিখুন..." aria-label="Your message"></textarea><div class="composer-actions"><span class="composer-hint">Enter পাঠাবে · Shift + Enter নতুন লাইন</span><button class="send" id="sendButton" aria-label="Send message" type="submit">↑</button></div></form><div class="disclaimer">লাইভ AI ব্যবহারের জন্য সার্ভারে OpenAI API key এবং Vercel deployment প্রয়োজন। API key এই পেজে প্রকাশ করা হয় না।</div></div>
+<div class="composer-area"><form class="composer" id="chatForm"><textarea id="prompt" rows="1" placeholder="মেসেজ লিখুন..." aria-label="Your message"></textarea><div class="composer-actions"><span class="composer-hint">Enter পাঠাবে · Shift + Enter নতুন লাইন</span><button class="send" id="sendButton" aria-label="Send message" type="submit">↑</button></div></form><div class="disclaimer">Gemini AI ব্যবহারের জন্য সার্ভারে Google AI Studio API key সেট থাকতে হবে। API key এই পেজে প্রকাশ করা হয় না।</div></div>
 </main></div><div class="toast" id="toast" role="status"></div>
 <script>
 (function(){
@@ -57,7 +57,7 @@ let toastTimer;
 function notify(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2600)}
 function closeMenu(){modelMenu.classList.remove('open');modelButton.setAttribute('aria-expanded','false')}
 modelButton.addEventListener('click',e=>{e.stopPropagation();const open=!modelMenu.classList.contains('open');modelMenu.classList.toggle('open',open);modelButton.setAttribute('aria-expanded',String(open))});
-modelMenu.addEventListener('click',e=>{const option=e.target.closest('[data-model]');if(!option)return;const supported=['OpenChat Demo','GPT-4o'];if(!supported.includes(option.dataset.model)){closeMenu();notify(option.dataset.model+' provider এখনো সংযুক্ত নয়। OpenChat Demo অথবা GPT-4o ব্যবহার করুন।');return;}$('modelName').textContent=option.dataset.model;modelMenu.querySelectorAll('[data-model]').forEach(el=>{const selected=el===option;el.setAttribute('aria-selected',String(selected));el.lastElementChild.textContent=selected?'✓':''});closeMenu()});
+modelMenu.addEventListener('click',e=>{const option=e.target.closest('[data-model]');if(!option)return;const supported=['Gemini Flash (Free)'];if(!supported.includes(option.dataset.model)){closeMenu();notify(option.dataset.model+' এখনো সংযুক্ত নয়। আপাতত Gemini Flash (Free) ব্যবহার করুন।');return;}$('modelName').textContent=option.dataset.model;modelMenu.querySelectorAll('[data-model]').forEach(el=>{const selected=el===option;el.setAttribute('aria-selected',String(selected));el.lastElementChild.textContent=selected?'✓':''});closeMenu()});
 document.addEventListener('click',e=>{if(!modelMenu.contains(e.target)&&!modelButton.contains(e.target))closeMenu()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 function newChat(){messages.replaceChildren();messages.hidden=true;welcome.hidden=false;prompt.value='';resizePrompt();prompt.focus()}
@@ -70,7 +70,7 @@ prompt.addEventListener('input',resizePrompt);
 prompt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('chatForm').requestSubmit()}});
 function addMessage(text,who){const item=document.createElement('div');item.className='message '+who;const avatar=document.createElement('div');avatar.className='avatar';avatar.textContent=who==='user'?'আপ':'✳';const body=document.createElement('div');body.className='message-body';const name=document.createElement('div');name.className='message-name';name.textContent=who==='user'?'আপনি':'OpenChat AI';const content=document.createElement('div');content.className='message-text';content.textContent=text;body.append(name,content);item.append(avatar,body);messages.append(item)}
 const conversation=[];
-$('chatForm').addEventListener('submit',async e=>{e.preventDefault();const text=prompt.value.trim();if(!text)return;welcome.hidden=true;messages.hidden=false;addMessage(text,'user');conversation.push({role:'user',content:text});prompt.value='';resizePrompt();const sendButton=$('sendButton');sendButton.disabled=true;sendButton.textContent='…';try{const model=$('modelName').textContent==='GPT-4o'?'gpt-4o':'gpt-4o-mini';const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,messages:conversation.slice(-20)})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'AI উত্তর পাওয়া যায়নি।');if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('AI থেকে উত্তর পাওয়া যায়নি।');conversation.push({role:'assistant',content:data.reply});addMessage(data.reply,'assistant')}catch(err){addMessage(err.message==='Failed to fetch'?'Backend পাওয়া যায়নি। Render-এ Web Service deploy করা হয়েছে কি না যাচাই করুন।':(err.message||'দুঃখিত, এখন উত্তর পাওয়া যাচ্ছে না।'),'assistant')}finally{sendButton.disabled=false;sendButton.textContent='↑';chatScroll.scrollTop=chatScroll.scrollHeight;prompt.focus()}});
+$('chatForm').addEventListener('submit',async e=>{e.preventDefault();const text=prompt.value.trim();if(!text)return;welcome.hidden=true;messages.hidden=false;addMessage(text,'user');conversation.push({role:'user',content:text});prompt.value='';resizePrompt();const sendButton=$('sendButton');sendButton.disabled=true;sendButton.textContent='…';try{const model='gemini-2.5-flash';const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,messages:conversation.slice(-20)})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'AI উত্তর পাওয়া যায়নি।');if(typeof data.reply!=='string'||!data.reply.trim())throw new Error('AI থেকে উত্তর পাওয়া যায়নি।');conversation.push({role:'assistant',content:data.reply});addMessage(data.reply,'assistant')}catch(err){addMessage(err.message==='Failed to fetch'?'Backend পাওয়া যায়নি। Render-এ Web Service deploy করা হয়েছে কি না যাচাই করুন।':(err.message||'দুঃখিত, এখন উত্তর পাওয়া যাচ্ছে না।'),'assistant')}finally{sendButton.disabled=false;sendButton.textContent='↑';chatScroll.scrollTop=chatScroll.scrollHeight;prompt.focus()}});
 })();
 </script>
 </body></html>
