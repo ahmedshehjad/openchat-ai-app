@@ -43,20 +43,28 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
-    const upstream = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": apiKey,
-        "Content-Type": "application/json"
+    const requestBody = JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate." }]
       },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate." }]
-        },
-        contents: messages,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-      })
+      contents: messages,
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
     });
+
+    // Gemini may briefly return 503 during demand spikes; retry twice with a short delay.
+    let upstream;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      upstream = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": apiKey,
+          "Content-Type": "application/json"
+        },
+        body: requestBody
+      });
+      if (upstream.status !== 503 || attempt === 2) break;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
 
     const data = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
