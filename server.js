@@ -66,8 +66,10 @@ async function callGemini(apiKey, messages) {
     ? ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"]
     : ["gemini-3.8-flash", "gemini-3.6-flash"];
   let upstream;
+  let modelUsed = models[0];
   for (let i = 0; i < models.length; i++) {
-    upstream = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + models[i] + ":generateContent", {
+    modelUsed = models[i];
+    upstream = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + modelUsed + ":generateContent", {
       method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify(bodyObject)
     }, 90000);
@@ -83,7 +85,8 @@ async function callGemini(apiKey, messages) {
   } : null;
   const reply = responseParts.map(p => typeof p.text === "string" ? p.text : "").filter(Boolean).join("\n").trim();
   if (isImage && !imageData && !reply) throw new Error("এই API account-এ image generation চালু নেই বা মডেলটি উপলভ্য নয়। Google AI Studio-র model access ও quota যাচাই করুন।");
-  return { reply: reply || (imageData ? "ছবি তৈরি হয়েছে।" : ""), imageData };
+  console.info("Gemini request succeeded with model:", modelUsed);
+  return { reply: reply || (imageData ? "ছবি তৈরি হয়েছে।" : ""), imageData, modelUsed };
 }
 
 async function callOpenAI(apiKey, messages, model) {
