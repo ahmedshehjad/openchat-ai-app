@@ -60,11 +60,17 @@ app.post("/api/chat", async (req, res) => {
 
     const data = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
+      // Log only the provider's status and error message; never log the API key.
+      console.error("Gemini API error:", upstream.status, data.error?.message || "No provider error message");
       const message = upstream.status === 401 || upstream.status === 403
         ? "Gemini API key গ্রহণ করা হয়নি, অথবা API access চালু নেই। Google AI Studio key ও API access যাচাই করুন।"
         : upstream.status === 429
           ? "Gemini-এর ফ্রি ব্যবহারের সীমা আপাতত শেষ হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।"
-          : "Gemini থেকে উত্তর পাওয়া যায়নি। মডেল ও API key যাচাই করে আবার চেষ্টা করুন।";
+          : upstream.status === 404
+            ? "Gemini মডেলটি পাওয়া যায়নি। Google AI Studio-তে Gemini 2.5 Flash access যাচাই করুন।"
+            : upstream.status === 400
+              ? "Gemini request গ্রহণ করেনি। মেসেজের ফরম্যাট বা API configuration যাচাই করতে হবে।"
+              : "Gemini থেকে উত্তর পাওয়া যায়নি (HTTP " + upstream.status + ")। Render logs-এ বিস্তারিত দেখা যাবে।";
       return res.status(upstream.status === 429 ? 429 : 502).json({ error: message });
     }
 
