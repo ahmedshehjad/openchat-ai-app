@@ -143,7 +143,11 @@ app.post("/api/chat", async (req, res) => {
     else if (config.provider === "openai") answer = await callOpenAI(apiKey, messages, config.model);
     else if (config.provider === "anthropic") answer = await callAnthropic(apiKey, messages, config.model);
     else answer = await callGroq(apiKey, messages, config.model);
-    if (!answer) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
+    if (answer && typeof answer === "object" && !Array.isArray(answer)) {
+      if (!answer.reply && !answer.imageData) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
+      return res.status(200).json({ reply: answer.reply || "ছবি তৈরি হয়েছে।", imageData: answer.imageData || null });
+    }
+    if (typeof answer !== "string" || !answer.trim()) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
     return res.status(200).json({ reply: answer });
   } catch (error) {
     const message = error?.name === "AbortError" ? "AI উত্তর দিতে বেশি সময় নিচ্ছে। আবার চেষ্টা করুন।" : (error.message || "AI সার্ভারে সংযোগ করা যায়নি।");
