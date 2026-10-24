@@ -53,6 +53,9 @@ body{background:var(--bg)}.app{background:var(--bg)}.sidebar{display:none!import
  .composer-area{width:100%;flex:0 0 auto}
  .bottom-app-nav{width:100%;flex:0 0 64px}
 }
+/* Show model selector on mobile and desktop */
+.model-wrap{display:block!important}
+@media(max-width:700px){.model-button{max-width:150px;padding:8px 7px;gap:5px}.model-menu{top:60px;left:12px;width:min(280px,calc(100vw - 24px))}}
 </style>
 </head>
 <body>
