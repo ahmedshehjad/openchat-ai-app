@@ -75,8 +75,12 @@ body{background:var(--bg)}.app{background:var(--bg)}.sidebar{display:none!import
 <button class="model-option" role="option" aria-selected="false" data-model="GPT-4o">GPT-4o <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Claude">Claude <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Gemini">Gemini <span></span></button>
-<button class="model-option" role="option" aria-selected="false" data-model="Llama">Llama <span></span></button>
-<div class="model-note">Gemini free tier-এর সীমা প্রযোজ্য।</div></div></div></div>
+<button class="model-option" role="option" aria-selected="false" data-model="OpenRouter Free (Auto)">OpenRouter Free (Auto) <span></span></button>
+<button class="model-option" role="option" aria-selected="false" data-model="Nemotron 3 Ultra (Free)">Nemotron 3 Ultra (Free) <span></span></button>
+<button class="model-option" role="option" aria-selected="false" data-model="Flint Coding (Free)">Flint Coding (Free) <span></span></button>
+<button class="model-option" role="option" aria-selected="false" data-model="North Mini Code (Free)">North Mini Code (Free) <span></span></button>
+<button class="model-option" role="option" aria-selected="false" data-model="Nemotron 3.5 Super VL (Free)">Nemotron 3.5 Super VL (Free) <span></span></button>
+<div class="model-note">OpenRouter ফ্রি মডেলের quota ও availability পরিবর্তিত হতে পারে।</div></div></div></div>
 <div class="status"><span class="dot"></span><span class="status-label">Interface ready</span></div>
 </header>
 <section class="chat-scroll" id="chatScroll" aria-live="polite">
@@ -97,7 +101,7 @@ body{background:var(--bg)}.app{background:var(--bg)}.sidebar{display:none!import
 </div></div>
 <div class="messages" id="messages" hidden></div>
 </section>
-<div class="composer-area"><form class="composer" id="chatForm"><textarea id="prompt" rows="1" placeholder="মেসেজ লিখুন..." aria-label="Your message"></textarea><div class="composer-actions"><span class="composer-hint">Enter পাঠাবে · Shift + Enter নতুন লাইন</span><button class="send" id="sendButton" aria-label="Send message" type="submit">↑</button></div></form><div class="disclaimer">Gemini AI ব্যবহারের জন্য সার্ভারে Google AI Studio API key সেট থাকতে হবে। API key এই পেজে প্রকাশ করা হয় না।</div></div>
+<div class="composer-area"><form class="composer" id="chatForm"><textarea id="prompt" rows="1" placeholder="মেসেজ লিখুন..." aria-label="Your message"></textarea><div class="composer-actions"><span class="composer-hint">Enter পাঠাবে · Shift + Enter নতুন লাইন</span><button class="send" id="sendButton" aria-label="Send message" type="submit">↑</button></div></form><div class="disclaimer">Gemini ও OpenRouter মডেল ব্যবহারের জন্য সার্ভারে সংশ্লিষ্ট API key সেট থাকতে হবে। API key এই পেজে প্রকাশ করা হয় না।</div></div>
 </main><nav class="bottom-app-nav"><button id="navRoles"><span class="nav-icon">◉</span>Roles</button><button id="navChats" class="active"><span class="nav-icon">▣</span>Chats</button><button id="navSettings"><span class="nav-icon">⬡</span>Settings</button></nav></div><div class="toast" id="toast" role="status"></div>
 <script>
 (function(){
