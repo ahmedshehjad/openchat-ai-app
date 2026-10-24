@@ -42,7 +42,6 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
     const requestBody = JSON.stringify({
       systemInstruction: {
         parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate." }]
@@ -51,19 +50,25 @@ app.post("/api/chat", async (req, res) => {
       generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
     });
 
-    // Gemini may briefly return 503 during demand spikes; retry twice with a short delay.
+    // Retry transient overloads, then automatically try stable previous Flash models.
+    const modelsToTry = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"];
     let upstream;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      upstream = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "x-goog-api-key": apiKey,
-          "Content-Type": "application/json"
-        },
-        body: requestBody
-      });
-      if (upstream.status !== 503 || attempt === 2) break;
-      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+    for (let modelIndex = 0; modelIndex < modelsToTry.length; modelIndex++) {
+      const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/" + modelsToTry[modelIndex] + ":generateContent";
+      const attempts = modelIndex === 0 ? 3 : 1;
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        upstream = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "x-goog-api-key": apiKey,
+            "Content-Type": "application/json"
+          },
+          body: requestBody
+        });
+        if (upstream.status !== 503 || attempt === attempts - 1) break;
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+      if (upstream.status !== 503) break;
     }
 
     const data = await upstream.json().catch(() => ({}));
@@ -75,7 +80,7 @@ app.post("/api/chat", async (req, res) => {
         : upstream.status === 429
           ? "Gemini-এর ফ্রি ব্যবহারের সীমা আপাতত শেষ হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।"
           : upstream.status === 404
-            ? "Gemini মডেলটি পাওয়া যায়নি। Google AI Studio-তে Gemini 3.8 Flash access যাচাই করুন।"
+            ? "Gemini মডেলটি পাওয়া যায়নি। Google AI Studio-তে API key-এর model access যাচাই করুন।"
             : upstream.status === 400
               ? "Gemini request গ্রহণ করেনি। মেসেজের ফরম্যাট বা API configuration যাচাই করতে হবে।"
               : "Gemini থেকে উত্তর পাওয়া যায়নি (HTTP " + upstream.status + ")। Render logs-এ বিস্তারিত দেখা যাবে।";
