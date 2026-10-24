@@ -11,7 +11,11 @@ const MODEL_CONFIG = {
   "GPT-4o": { provider: "openai", model: "gpt-4o", key: "OPENAI_API_KEY" },
   "Claude": { provider: "anthropic", model: "claude-sonnet-4-20250514", key: "ANTHROPIC_API_KEY" },
   "Gemini": { provider: "gemini", model: "gemini-3.8-flash", key: "GEMINI_API_KEY" },
-  "Llama": { provider: "groq", model: "llama-3.3-70b-versatile", key: "GROQ_API_KEY" }
+  "OpenRouter Free (Auto)": { provider: "openrouter", model: "openrouter/free", key: "OPENROUTER_API_KEY" },
+  "Nemotron 3 Ultra (Free)": { provider: "openrouter", model: "nvidia/nemotron-3-ultra:free", key: "OPENROUTER_API_KEY" },
+  "Flint Coding (Free)": { provider: "openrouter", model: "recursive/flint:free", key: "OPENROUTER_API_KEY" },
+  "North Mini Code (Free)": { provider: "openrouter", model: "cohere/north-mini-code:free", key: "OPENROUTER_API_KEY" },
+  "Nemotron 3.5 Super VL (Free)": { provider: "openrouter", model: "nvidia/nemotron-3.5-super-vl:free", key: "OPENROUTER_API_KEY" }
 };
 
 function normalizeMessages(input) {
@@ -104,13 +108,27 @@ async function callAnthropic(apiKey, messages, model) {
   return data.content?.filter(p => p.type === "text").map(p => p.text).join("").trim();
 }
 
-async function callGroq(apiKey, messages, model) {
-  const upstream = await fetchWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST", headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages: [{ role: "system", content: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate. Use clear Markdown formatting." }, ...messages.map(m => ({ role: m.role, content: m.content }))], temperature: 0.7, max_tokens: 2048 })
+async function callOpenRouter(apiKey, messages, model) {
+  const upstream = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + apiKey,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://openchat-ai-app-1.onrender.com",
+      "X-Title": "OpenChat AI"
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: "You are OpenChat AI, an expert assistant for complex reasoning, software engineering, debugging, and clear multilingual answers. Reply in the user's language, including Bengali when appropriate. Be honest about uncertainty and provide actionable steps." },
+        ...messages.map(m => ({ role: m.role, content: m.content }))
+      ],
+      temperature: 0.6,
+      max_tokens: 4096
+    })
   });
   const data = await upstream.json().catch(() => ({}));
-  if (!upstream.ok) throw new Error(providerError("Llama/Groq", upstream.status, data.error?.message));
+  if (!upstream.ok) throw new Error(providerError("OpenRouter", upstream.status, data.error?.message));
   return data.choices?.[0]?.message?.content?.trim();
 }
 
@@ -130,7 +148,7 @@ app.post("/api/chat", async (req, res) => {
   if (!config) return res.status(400).json({ error: "মডেলটি তালিকায় নেই।" });
   const apiKey = process.env[config.key];
   if (!apiKey) {
-    const keyLabels = { GEMINI_API_KEY: "Google AI Studio-তে তৈরি GEMINI_API_KEY", OPENAI_API_KEY: "OPENAI_API_KEY", ANTHROPIC_API_KEY: "ANTHROPIC_API_KEY", GROQ_API_KEY: "GROQ_API_KEY" };
+    const keyLabels = { GEMINI_API_KEY: "Google AI Studio-তে তৈরি GEMINI_API_KEY", OPENAI_API_KEY: "OPENAI_API_KEY", ANTHROPIC_API_KEY: "ANTHROPIC_API_KEY", OPENROUTER_API_KEY: "OPENROUTER_API_KEY" };
     return res.status(503).json({ error: selected + " ব্যবহার করতে Render Environment Variables-এ " + keyLabels[config.key] + " যোগ করতে হবে। API key কখনো ওয়েবপেজে বা চ্যাটে লিখবেন না।" });
   }
   if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "একটি মেসেজ পাঠান।" });
@@ -142,7 +160,7 @@ app.post("/api/chat", async (req, res) => {
     if (config.provider === "gemini") answer = await callGemini(apiKey, messages);
     else if (config.provider === "openai") answer = await callOpenAI(apiKey, messages, config.model);
     else if (config.provider === "anthropic") answer = await callAnthropic(apiKey, messages, config.model);
-    else answer = await callGroq(apiKey, messages, config.model);
+    else answer = await callOpenRouter(apiKey, messages, config.model);
     if (answer && typeof answer === "object" && !Array.isArray(answer)) {
       if (!answer.reply && !answer.imageData) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
       return res.status(200).json({ reply: answer.reply || "ছবি তৈরি হয়েছে।", imageData: answer.imageData || null });
