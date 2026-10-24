@@ -162,7 +162,13 @@ app.post("/api/chat", async (req, res) => {
     else answer = await callOpenRouter(apiKey, messages, config.model);
     if (answer && typeof answer === "object" && !Array.isArray(answer)) {
       if (!answer.reply && !answer.imageData) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
-      return res.status(200).json({ reply: answer.reply || "ছবি তৈরি হয়েছে।", imageData: answer.imageData || null, ...(answer.modelUsed ? { modelUsed: answer.modelUsed } : {}) });
+      let reply = answer.reply || "ছবি তৈরি হয়েছে।";
+      const lastUserMessage = messages[messages.length - 1].content;
+      const asksIdentityOrModel = /(?:তুমি\s*কে|আপনি\s*কে|কোন.{0,20}মডেল|মডেল.{0,20}(?:কী|কি|নাম)|কী.{0,15}মডেল|who\s+are\s+you|which\s+model|what\s+model|model\s+are\s+you)/i.test(lastUserMessage);
+      if (config.provider === "openrouter" && answer.modelUsed && asksIdentityOrModel) {
+        reply = "আমি **OpenChat AI**—এই অ্যাপের AI সহায়ক। এই উত্তরে ব্যবহৃত প্রকৃত মডেল আইডি: **" + answer.modelUsed + "**।";
+      }
+      return res.status(200).json({ reply, imageData: answer.imageData || null, ...(answer.modelUsed ? { modelUsed: answer.modelUsed } : {}) });
     }
     if (typeof answer !== "string" || !answer.trim()) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
     return res.status(200).json({ reply: answer });
