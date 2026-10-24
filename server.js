@@ -128,7 +128,7 @@ async function callOpenRouter(apiKey, messages, model) {
   });
   const data = await upstream.json().catch(() => ({}));
   if (!upstream.ok) throw new Error(providerError("OpenRouter", upstream.status, data.error?.message));
-  return data.choices?.[0]?.message?.content?.trim();
+  return { reply: data.choices?.[0]?.message?.content?.trim(), modelUsed: data.model || model };
 }
 
 function providerError(provider, status, detail) {
@@ -162,7 +162,7 @@ app.post("/api/chat", async (req, res) => {
     else answer = await callOpenRouter(apiKey, messages, config.model);
     if (answer && typeof answer === "object" && !Array.isArray(answer)) {
       if (!answer.reply && !answer.imageData) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
-      return res.status(200).json({ reply: answer.reply || "ছবি তৈরি হয়েছে।", imageData: answer.imageData || null });
+      return res.status(200).json({ reply: answer.reply || "ছবি তৈরি হয়েছে।", imageData: answer.imageData || null, ...(answer.modelUsed ? { modelUsed: answer.modelUsed } : {}) });
     }
     if (typeof answer !== "string" || !answer.trim()) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
     return res.status(200).json({ reply: answer });
