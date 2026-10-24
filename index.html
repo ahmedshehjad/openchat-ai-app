@@ -17,6 +17,42 @@
 body{background:var(--bg)}.app{background:var(--bg)}.sidebar{display:none!important}.main{width:100%;max-width:780px;margin:0 auto}.topbar{height:58px;border:0;padding:0 20px}.mobile-brand{display:block;font-size:25px;letter-spacing:-1px;font-weight:850}.model-wrap{display:none}.status{display:none}.chat-scroll{padding:0 20px 10px}.welcome{justify-content:flex-start;align-items:stretch;text-align:left;min-height:0;padding:8px 0 20px}.welcome-icon{display:none}.welcome h1{display:none}.welcome>p{display:none}.welcome:before{content:'Premium Features';font-size:18px;font-weight:780;margin:4px 0 16px}.suggestions{width:100%;grid-template-columns:1fr 1fr;gap:10px;margin-top:26px}.suggestion{border-radius:23px;background:transparent;border-color:#292b30;padding:14px 15px;min-height:68px}.suggestion:before{content:''}.composer-area{padding:8px 18px max(8px,env(safe-area-inset-bottom));background:var(--bg)}.composer{background:#17181c;border:1px solid #1f2025;border-radius:999px;padding:6px 10px 6px 19px;min-height:58px}.composer textarea{padding:8px 0}.send{width:40px;height:40px;background:transparent;color:var(--accent);font-size:26px}.composer-hint,.disclaimer{display:none}.bottom-app-nav{height:64px;flex-shrink:0;background:#17181c;display:grid;grid-template-columns:repeat(3,1fr);padding:4px 12px max(3px,env(safe-area-inset-bottom));border-top:1px solid #222329}.bottom-app-nav button{border:0;background:transparent;color:#a0a2ac;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px}.bottom-app-nav button.active{color:var(--accent)}.bottom-app-nav .nav-icon{font-size:22px;line-height:1}.home-feature-title{font-size:18px;font-weight:780;margin:0 0 14px}.home-features{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,minmax(90px,auto));gap:11px}.home-feature{background:var(--panel);border:0;border-radius:19px;padding:15px;text-align:left;display:flex;align-items:flex-start;gap:10px;min-width:0;color:var(--text)}.home-feature.tall{grid-row:span 2;flex-direction:column}.home-feature.document{grid-column:1/-1;align-items:center;min-height:82px}.home-feature .tile-icon{width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:linear-gradient(145deg,#ffae70,#ff603e);display:grid;place-items:center;font-size:21px}.home-feature .blue{background:linear-gradient(145deg,#4bd9f5,#0988c8)}.home-feature .purple{background:linear-gradient(145deg,#b46bff,#5946ef)}.home-feature .pink{background:linear-gradient(145deg,#ff77d1,#e3268e)}.home-feature .gold{background:linear-gradient(145deg,#ffe35c,#ff8a00)}.home-feature strong{display:block;font-size:13px;margin:3px 0 5px}.home-feature small{display:block;color:#a8aab4;font-size:11px;line-height:1.45}.home-feature .tile-copy{min-width:0}.tools-title{font-size:18px;font-weight:780;margin:28px 0 14px}.home-tools{display:grid;grid-template-columns:1fr 1fr;gap:11px}.home-tool{border:0;border-radius:19px;background:var(--panel);padding:16px;text-align:left;min-height:135px;color:var(--text)}.home-tool .tile-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:21px;margin-bottom:10px}.home-tool strong{display:block;font-size:14px;margin-bottom:5px}.home-tool small{font-size:11px;line-height:1.45;color:#a8aab4;display:block}.suggestion-heading{font-size:18px;font-weight:780;margin:29px 0 13px}.suggestion-tabs{display:flex;gap:9px;overflow-x:auto;padding-bottom:9px;scrollbar-width:none}.suggestion-tabs button{border:0;background:#24262c;color:#f0f1f5;padding:9px 17px;border-radius:999px;white-space:nowrap;font-size:13px}.suggestion-tabs button.active{background:var(--accent);color:#06241d;font-weight:750}.messages{padding:18px 0}.message{gap:10px}.avatar{border-radius:50%}.message-text{line-height:1.75}
 @media(max-width:700px){.topbar{padding:0 20px;height:58px}.chat-scroll{padding:0 20px 10px}.welcome{padding:8px 0 18px}.suggestions{grid-template-columns:1fr;gap:9px}.suggestion{min-height:60px}.composer-area{padding:8px 18px max(8px,env(safe-area-inset-bottom))}.model-menu{top:60px}.home-feature{padding:12px;gap:9px}.home-feature .tile-icon{width:39px;height:39px;flex-basis:39px}.home-feature strong{font-size:12px}.home-feature small{font-size:10px}.home-tool{padding:14px;min-height:130px}}
 @media(min-width:701px){.welcome{padding-top:10px}.suggestions{grid-template-columns:1fr 1fr}}
+
+/* Layout fix: keep the app in one full-width column on phones */
+.app{display:flex;flex-direction:column;width:100%;max-width:none;min-width:0}
+.main{display:flex;flex:1 1 auto;width:100%;max-width:none;min-width:0;min-height:0}
+.chat-scroll{width:100%;min-width:0;flex:1 1 auto}
+.welcome{width:100%;min-width:0;display:block}
+.welcome:before{display:none!important}
+.welcome>.welcome-icon,.welcome>h1,.welcome>p,.welcome>.suggestions{display:none!important}
+#referenceHome{display:block;width:100%;max-width:780px;margin:0 auto}
+.home-feature-title{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.home-feature-title .plain-link{float:none!important;white-space:nowrap}
+.home-features{width:100%;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(112px,auto) minmax(112px,auto);align-items:stretch}
+.home-feature{width:100%;min-width:0;overflow:hidden}
+.home-feature .tile-copy{min-width:0;overflow-wrap:anywhere}
+.home-feature.tall{grid-row:span 2}
+.home-feature.document{grid-column:1/-1}
+.home-tools{width:100%;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.home-tool{min-width:0;overflow-wrap:anywhere}
+.suggestion-tabs{max-width:100%}
+.bottom-app-nav{position:relative;z-index:5;width:100%;flex:0 0 64px}
+@media(max-width:700px){
+ .app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+ .main{flex:1 1 auto;min-height:0;width:100%;max-width:none}
+ .chat-scroll{width:100%;min-width:0;overflow-y:auto;padding:0 20px 10px}
+ #referenceHome{width:100%;max-width:none}
+ .home-features{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(112px,auto) minmax(112px,auto);gap:11px}
+ .home-feature{padding:13px;gap:9px}
+ .home-feature.tall{grid-row:span 2;flex-direction:column}
+ .home-feature.document{grid-column:1/-1;flex-direction:row}
+ .home-feature .tile-icon{width:39px;height:39px;flex:0 0 39px}
+ .home-feature strong{font-size:13px}
+ .home-feature small{font-size:11px}
+ .home-tools{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .composer-area{width:100%;flex:0 0 auto}
+ .bottom-app-nav{width:100%;flex:0 0 64px}
+}
 </style>
 </head>
 <body>
