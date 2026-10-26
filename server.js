@@ -207,8 +207,8 @@ async function searchDuckDuckGo(query) {
   }, 12000);
   if (!response.ok) throw new Error("ওয়েব সার্চ সাময়িকভাবে পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।");
   const html = await response.text();
-  const clean = (value) => value.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/\\s+/g, " ").trim();
-  const links = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\\s\\S]*?)<\\/a>/gi)];
+  const clean = (value) => value.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  const links = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)];
   const results = [];
   for (const match of links.slice(0, 5)) {
     let href = match[1].replace(/&amp;/g, "&");
@@ -216,10 +216,10 @@ async function searchDuckDuckGo(query) {
       if (href.includes("uddg=")) href = decodeURIComponent(new URL(href, "https://duckduckgo.com").searchParams.get("uddg") || "");
       else if (href.startsWith("//")) href = "https:" + href;
     } catch (_) {}
-    if (!/^https?:\\/\\//i.test(href)) continue;
+    if (!/^https?:\/\//i.test(href)) continue;
     const title = clean(match[2]);
     const pos = match.index + match[0].length;
-    const snippetMatch = html.slice(pos, pos + 1400).match(/class="result__snippet"[^>]*>([\\s\\S]*?)<\\/[^>]+>/i);
+    const snippetMatch = html.slice(pos, pos + 1400).match(/class="result__snippet"[^>]*>([\s\S]*?)<\/[^>]+>/i);
     const snippet = snippetMatch ? clean(snippetMatch[1]) : "";
     if (title) results.push({ title, url: href, snippet });
   }
@@ -264,8 +264,8 @@ app.post("/api/chat", async (req, res) => {
   const latestUserText = [...incomingMessages].reverse().find(m => m && m.role === "user" && typeof m.content === "string")?.content || "";
   if (body.tool === "video" && latestUserText.includes("Tool: Video Summary")) {
     const requestText = latestUserText.split("User request:").slice(1).join("User request:").trim();
-    const hasVideoUrl = /https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?|youtu\\.be\\/)/i.test(requestText);
-    if (!requestText || (hasVideoUrl && requestText.replace(/https?:\\/\\/\\S+/g, "").trim().length < 500)) {
+    const hasVideoUrl = /https?:\/\/(?:www\\.)?(?:youtube\.com\/watch\\?|youtu\.be\/)/i.test(requestText);
+    if (!requestText || (hasVideoUrl && requestText.replace(/https?:\/\/\\S+/g, "").trim().length < 500)) {
       return res.status(200).json({ reply: "এই ফ্রি সেটআপে YouTube লিংক থেকে সরাসরি transcript নেওয়া যায় না। ভিডিওর transcript/subtitles বা নোট এখানে পেস্ট করুন—আমি সেগুলোর ভিত্তিতে সারাংশ তৈরি করব।" });
     }
   }
