@@ -195,7 +195,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent);
 <section class="chat-scroll" id="chatScroll" aria-live="polite">
 <div class="welcome" id="welcome"><div id="referenceHome"><div class="home-feature-title">Premium Features <button class="plain-link" id="viewAllFeatures">View all ›</button></div><div class="home-features">
 <button class="home-feature tall" data-home-tool="photo"><span class="tile-icon">✥</span><span class="tile-copy"><strong>Photo Design</strong><small>Create stunning photo-edit prompts</small></span></button>
-<button class="home-feature" data-home-tool="web"><span class="tile-icon blue">◎</span><span class="tile-copy"><strong>Web Research</strong><small>Research with Google Search grounding</small></span></button>
+<button class="home-feature" data-home-tool="web"><span class="tile-icon blue">◎</span><span class="tile-copy"><strong>Web Research</strong><small>Search the web and summarize sources</small></span></button>
 <button class="home-feature" data-home-tool="video"><span class="tile-icon">▶</span><span class="tile-copy"><strong>Video Summary</strong><small>Summarize supported video links or transcripts</small></span></button>
 <button class="home-feature document" data-home-tool="document"><span class="tile-icon purple">▣</span><span class="tile-copy"><strong>Document Processing</strong><small>Summarize text documents</small></span></button></div>
 <div class="tools-title">Useful Tools</div><div class="home-tools">
@@ -246,8 +246,8 @@ $('chatForm').addEventListener('submit',async e=>{e.preventDefault();const text=
 let activeTool=null;
 const toolModes={
  photo:{title:'Photo Design',placeholder:'ছবির বর্ণনা ও কী পরিবর্তন চান লিখুন…',instruction:'Help the user create a precise photo-editing plan or prompt. Do not claim to have seen an image unless one was provided.'},
- web:{title:'Web Research',placeholder:'কোন বিষয়টি নিয়ে গবেষণা করতে চান লিখুন…',instruction:'Research the topic using Google Search grounding when available. Summarize key findings, include source URLs when returned, distinguish facts from uncertainty, and say if live search is unavailable.'},
- video:{title:'Video Summary',placeholder:'ভিডিওর transcript বা নোট পেস্ট করুন…',instruction:'If the user provides a public YouTube URL, summarize it only when the connected AI provider supports video input. Otherwise ask for transcript or notes; never invent video contents.'},
+ web:{title:'Web Research',placeholder:'কোন বিষয়টি নিয়ে গবেষণা করতে চান লিখুন…',instruction:'Use the web search results supplied by the backend. Summarize findings in the user\'s language, cite the exact source URLs provided, distinguish facts from uncertainty, and never invent citations.'},
+ video:{title:'Video Summary',placeholder:'ভিডিওর transcript বা নোট পেস্ট করুন…',instruction:'Summarize transcript, subtitles, or notes provided by the user. If only a YouTube URL is supplied and no transcript is available, clearly ask the user to paste transcript/subtitles; never pretend to have watched the video or invent its contents.'},
  document:{title:'Document Processing',placeholder:'ডকুমেন্টের লেখা এখানে পেস্ট করুন…',instruction:'Summarize, explain, extract key points, translate, or rewrite document text supplied by the user. If no text is supplied, ask the user to paste it.'},
  image:{title:'Image Prompt Maker',placeholder:'কেমন ছবি তৈরি করতে চান বর্ণনা করুন…',instruction:'Generate an image from the user request using free AI Horde community image workers. Return the generated image, not just a prompt.'},
  email:{title:'Email Assistant',placeholder:'ইমেইলের উদ্দেশ্য, প্রাপক ও টোন লিখুন…',instruction:'Draft a complete professional email with subject when useful. Ask for missing essential details and match the requested language and tone.'}
