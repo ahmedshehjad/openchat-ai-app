@@ -21,4 +21,4 @@ jobs:
         run: node --check server.js
       - name: Check browser JavaScript syntax
         run: |
-          node -e 'const fs=require("fs"); const html=fs.readFileSync("index.html","utf8"); const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(s=>s.trim()); if(!scripts.length) throw new Error("No inline JavaScript found"); for(const script of scripts) new Function(script); console.log("Validated "+scripts.length+" inline script(s).");'
+          node -e 'const fs=require("fs"); const html=fs.readFileSync("index.html","utf8"); const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(s=>s.trim()); if(!scripts.length) throw new Error("No inline JavaScript found"); for(const script of scripts) new Function(script); console.log("Validated "+scripts.length+" inline script(s).");'
