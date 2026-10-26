@@ -61,8 +61,9 @@ class MainActivity : Activity() {
             ): Boolean {
                 this@MainActivity.filePathCallback?.onReceiveValue(null)
                 this@MainActivity.filePathCallback = filePathCallback
+                val chooserIntent = fileChooserParams?.createIntent() ?: return false
                 return try {
-                    startActivityForResult(fileChooserParams?.createIntent(), filePickerRequest)
+                    startActivityForResult(chooserIntent, filePickerRequest)
                     true
                 } catch (_: Exception) {
                     this@MainActivity.filePathCallback?.onReceiveValue(null)
