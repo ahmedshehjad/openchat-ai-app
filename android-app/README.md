@@ -1,5 +1,7 @@
 # Open AI Chat — Android WebView app
 
+> APK build workflow updated to install Android SDK packages directly.
+
 This Android Studio project wraps the live GitHub Pages app:
 
 https://ahmedshehjad.github.io/openchat-ai-app/
