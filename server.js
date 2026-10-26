@@ -18,7 +18,6 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "15mb" }));
 
 const MODEL_CONFIG = {
-  "Gemini Flash (Free)": { provider: "gemini", model: "gemini-3.8-flash", key: "GEMINI_API_KEY" },
   "OpenRouter Free (Auto)": { provider: "openrouter", model: "openrouter/free", key: "OPENROUTER_API_KEY" },
   "Flint Coding (Free)": { provider: "openrouter", model: "recursive/flint-v1.0:free", key: "OPENROUTER_API_KEY" },
   "North Mini Code (Free)": { provider: "openrouter", model: "cohere/north-mini-code:free", key: "OPENROUTER_API_KEY" },
@@ -203,7 +202,7 @@ function providerError(provider, status, detail) {
 app.post("/api/chat", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const body = req.body && typeof req.body === "object" ? req.body : {};
-  const selected = typeof body.model === "string" ? body.model : "Gemini Flash (Free)";
+  const selected = typeof body.model === "string" ? body.model : "OpenRouter Free (Auto)";
   const config = MODEL_CONFIG[selected];
   if (!config) return res.status(400).json({ error: "মডেলটি তালিকায় নেই।" });
   const apiKey = process.env[config.key];
