@@ -200,6 +200,32 @@ function providerError(provider, status, detail) {
   return provider + " থেকে উত্তর পাওয়া যায়নি (HTTP " + status + ")। API key ও provider-এর usage limit যাচাই করুন।";
 }
 
+async function searchDuckDuckGo(query) {
+  const url = "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query.slice(0, 300));
+  const response = await fetchWithTimeout(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; OpenChatAI/1.0)", "Accept": "text/html" }
+  }, 12000);
+  if (!response.ok) throw new Error("ওয়েব সার্চ সাময়িকভাবে পাওয়া যাচ্ছে না। পরে আবার চেষ্টা করুন।");
+  const html = await response.text();
+  const clean = (value) => value.replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/\\s+/g, " ").trim();
+  const links = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\\s\\S]*?)<\\/a>/gi)];
+  const results = [];
+  for (const match of links.slice(0, 5)) {
+    let href = match[1].replace(/&amp;/g, "&");
+    try {
+      if (href.includes("uddg=")) href = decodeURIComponent(new URL(href, "https://duckduckgo.com").searchParams.get("uddg") || "");
+      else if (href.startsWith("//")) href = "https:" + href;
+    } catch (_) {}
+    if (!/^https?:\\/\\//i.test(href)) continue;
+    const title = clean(match[2]);
+    const pos = match.index + match[0].length;
+    const snippetMatch = html.slice(pos, pos + 1400).match(/class="result__snippet"[^>]*>([\\s\\S]*?)<\\/[^>]+>/i);
+    const snippet = snippetMatch ? clean(snippetMatch[1]) : "";
+    if (title) results.push({ title, url: href, snippet });
+  }
+  return results;
+}
+
 async function callAIHordeImage(prompt, sourceImage = null, sourceWidth = 512, sourceHeight = 512) {
   const agent = "OpenChatAI:1.0:https://ahmedshehjad.github.io/openchat-ai-app/";
   const headers = { "Content-Type": "application/json", "apikey": "0000000000", "Client-Agent": agent };
@@ -236,6 +262,13 @@ app.post("/api/chat", async (req, res) => {
   const config = MODEL_CONFIG[selected];
   const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
   const latestUserText = [...incomingMessages].reverse().find(m => m && m.role === "user" && typeof m.content === "string")?.content || "";
+  if (body.tool === "video" && latestUserText.includes("Tool: Video Summary")) {
+    const requestText = latestUserText.split("User request:").slice(1).join("User request:").trim();
+    const hasVideoUrl = /https?:\\/\\/(?:www\\.)?(?:youtube\\.com\\/watch\\?|youtu\\.be\\/)/i.test(requestText);
+    if (!requestText || (hasVideoUrl && requestText.replace(/https?:\\/\\/\\S+/g, "").trim().length < 500)) {
+      return res.status(200).json({ reply: "এই ফ্রি সেটআপে YouTube লিংক থেকে সরাসরি transcript নেওয়া যায় না। ভিডিওর transcript/subtitles বা নোট এখানে পেস্ট করুন—আমি সেগুলোর ভিত্তিতে সারাংশ তৈরি করব।" });
+    }
+  }
   if (body.tool === "image" && latestUserText.includes("Tool: Image Prompt Maker")) {
     if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "ছবির বর্ণনা লিখুন।" });
     const promptMatch = latestUserText.split("User request:").slice(1).join("User request:").trim();
@@ -273,7 +306,16 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     let answer;
-    if (config.provider === "gemini") answer = await callGemini(apiKey, messages, attachments);
+    if (body.tool === "web" && latestUserText.includes("Tool: Web Research") && config.provider === "openrouter") {
+      const query = latestUserText.split("User request:").slice(1).join("User request:").trim();
+      if (!query) return res.status(400).json({ error: "কোন বিষয়টি নিয়ে ওয়েব সার্চ করতে চান তা লিখুন।" });
+      const results = await searchDuckDuckGo(query);
+      if (!results.length) return res.status(502).json({ error: "ওয়েব সার্চে ফল পাওয়া যায়নি। অন্যভাবে বিষয়টি লিখে আবার চেষ্টা করুন।" });
+      const context = results.map((item, index) => (index + 1) + ". " + item.title + "\\nURL: " + item.url + (item.snippet ? "\\nSnippet: " + item.snippet : "")).join("\\n\\n");
+      const researchedMessages = messages.slice(0, -1).concat({ role: "user", content: latestUserText + "\\n\\nWeb search results (use as source material; cite these exact URLs and do not invent other sources):\\n" + context });
+      answer = await callOpenRouter(apiKey, researchedMessages, config.model, attachments);
+    }
+    else if (config.provider === "gemini") answer = await callGemini(apiKey, messages, attachments);
     else if (config.provider === "openai") answer = await callOpenAI(apiKey, messages, config.model);
     else if (config.provider === "anthropic") answer = await callAnthropic(apiKey, messages, config.model);
     else answer = await callOpenRouter(apiKey, messages, config.model, attachments);
