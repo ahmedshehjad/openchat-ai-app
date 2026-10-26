@@ -88,14 +88,29 @@ async function callGemini(apiKey, messages, attachments = []) {
     : ["gemini-3.8-flash", "gemini-3.6-flash"];
   let upstream;
   let modelUsed = models[0];
+  let lastRequestError;
   for (let i = 0; i < models.length; i++) {
     modelUsed = models[i];
-    upstream = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + modelUsed + ":generateContent", {
-      method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify(bodyObject)
-    }, 90000);
-    if (upstream.status !== 503 && !(isImage && upstream.status === 404)) break;
+    try {
+      upstream = await fetchWithTimeout("https://generativelanguage.googleapis.com/v1beta/models/" + modelUsed + ":generateContent", {
+        method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify(bodyObject)
+      }, 40000);
+      if ((upstream.status === 503 || upstream.status === 429 || (isImage && upstream.status === 404)) && i < models.length - 1) {
+        console.warn("Gemini model unavailable; trying fallback model:", modelUsed, "HTTP", upstream.status);
+        continue;
+      }
+      break;
+    } catch (error) {
+      lastRequestError = error;
+      if (error?.name === "AbortError" && i < models.length - 1) {
+        console.warn("Gemini model timed out; trying fallback model:", modelUsed);
+        continue;
+      }
+      throw error;
+    }
   }
+  if (!upstream && lastRequestError) throw lastRequestError;
   const data = await upstream.json().catch(() => ({}));
   if (!upstream.ok) throw new Error(providerError("Gemini", upstream.status, data.error?.message));
   const responseParts = data.candidates?.[0]?.content?.parts || [];
