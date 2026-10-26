@@ -213,7 +213,7 @@ async function searchDuckDuckGo(query) {
   for (const match of links.slice(0, 5)) {
     let href = match[1].replace(/&amp;/g, "&");
     try {
-      if (href.includes("uddg=")) href = decodeURIComponent(new URL(href, "https://duckduckgo.com").searchParams.get("uddg") || "");
+      if (href.includes("uddg=")) href = new URL(href, "https://duckduckgo.com").searchParams.get("uddg") || "";
       else if (href.startsWith("//")) href = "https:" + href;
     } catch (_) {}
     if (!/^https?:\/\//i.test(href)) continue;
@@ -318,7 +318,17 @@ app.post("/api/chat", async (req, res) => {
     else if (config.provider === "gemini") answer = await callGemini(apiKey, messages, attachments);
     else if (config.provider === "openai") answer = await callOpenAI(apiKey, messages, config.model);
     else if (config.provider === "anthropic") answer = await callAnthropic(apiKey, messages, config.model);
-    else answer = await callOpenRouter(apiKey, messages, config.model, attachments);
+    else {
+      try {
+        answer = await callOpenRouter(apiKey, messages, config.model, attachments);
+      } catch (error) {
+        if (selected === "Nemotron 3 Ultra (Free)" && /HTTP (?:404|429|503)/.test(error.message || "")) {
+          answer = await callOpenRouter(apiKey, messages, "openrouter/free", attachments);
+        } else {
+          throw error;
+        }
+      }
+    }
     if (answer && typeof answer === "object" && !Array.isArray(answer)) {
       if (!answer.reply && !answer.imageData) return res.status(502).json({ error: "AI থেকে খালি উত্তর এসেছে। আবার চেষ্টা করুন।" });
       let reply = answer.reply || "ছবি তৈরি হয়েছে।";
