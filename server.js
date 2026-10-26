@@ -199,11 +199,49 @@ function providerError(provider, status, detail) {
   return provider + " থেকে উত্তর পাওয়া যায়নি (HTTP " + status + ")। API key ও provider-এর usage limit যাচাই করুন।";
 }
 
+async function callPollinationsImage(apiKey, prompt) {
+  const model = "black-forest-labs/flux.1-schnell";
+  const url = "https://gen.pollinations.ai/image/" + encodeURIComponent(prompt.slice(0, 4000)) +
+    "?model=" + encodeURIComponent(model) + "&width=1024&height=1024&safe=true";
+  const upstream = await fetchWithTimeout(url, {
+    method: "GET",
+    headers: { Authorization: "Bearer " + apiKey, Accept: "image/*" }
+  }, 90000);
+  if (!upstream.ok) {
+    const detail = await upstream.text().catch(() => "");
+    throw new Error(providerError("Pollinations image", upstream.status, detail.slice(0, 300)));
+  }
+  const mimeType = upstream.headers.get("content-type") || "image/jpeg";
+  if (!mimeType.startsWith("image/")) {
+    const detail = await upstream.text().catch(() => "");
+    throw new Error("ছবি তৈরি হয়নি। Pollinations থেকে অপ্রত্যাশিত উত্তর এসেছে: " + detail.slice(0, 180));
+  }
+  const data = Buffer.from(await upstream.arrayBuffer()).toString("base64");
+  return { reply: "ছবি তৈরি হয়েছে — FLUX.1 Schnell", imageData: { mimeType, data }, modelUsed: model };
+}
+
 app.post("/api/chat", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   const body = req.body && typeof req.body === "object" ? req.body : {};
   const selected = typeof body.model === "string" ? body.model : "OpenRouter Free (Auto)";
   const config = MODEL_CONFIG[selected];
+  const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
+  const latestUserText = [...incomingMessages].reverse().find(m => m && m.role === "user" && typeof m.content === "string")?.content || "";
+  if (latestUserText.includes("Tool: Image Prompt Maker")) {
+    if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "ছবির বর্ণনা লিখুন।" });
+    const imageKey = process.env.POLLINATIONS_API_KEY;
+    if (!imageKey) return res.status(503).json({ error: "ছবি তৈরির জন্য Render → Environment-এ POLLINATIONS_API_KEY যোগ করুন। Key তৈরি করুন https://enter.pollinations.ai/ থেকে। API key কখনো GitHub বা ওয়েবপেজের কোডে দেবেন না।" });
+    const promptMatch = latestUserText.split("User request:").slice(1).join("User request:").trim();
+    const imagePrompt = promptMatch || latestUserText.replace("Tool: Image Prompt Maker", "").trim();
+    if (!imagePrompt) return res.status(400).json({ error: "কী ধরনের ছবি চান তা লিখুন।" });
+    try {
+      const answer = await callPollinationsImage(imageKey, "Create a polished, high-quality image. Follow this user request closely. Avoid watermarks and unintended text. User request: " + imagePrompt);
+      return res.status(200).json(answer);
+    } catch (error) {
+      const message = error?.name === "AbortError" ? "ছবি তৈরি করতে বেশি সময় লাগছে। আবার চেষ্টা করুন।" : (error.message || "ছবি তৈরি করা যায়নি।");
+      return res.status(502).json({ error: message });
+    }
+  }
   if (!config) return res.status(400).json({ error: "মডেলটি তালিকায় নেই।" });
   const apiKey = process.env[config.key];
   if (!apiKey) {
@@ -254,6 +292,7 @@ app.get("/api/health", (_req, res) => {
     status: "ok",
     providers: {
       gemini: Boolean(process.env.GEMINI_API_KEY),
+      pollinationsImage: Boolean(process.env.POLLINATIONS_API_KEY),
       openrouter: Boolean(process.env.OPENROUTER_API_KEY)
     }
   });
