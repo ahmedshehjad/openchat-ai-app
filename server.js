@@ -264,8 +264,8 @@ app.post("/api/chat", async (req, res) => {
   const latestUserText = [...incomingMessages].reverse().find(m => m && m.role === "user" && typeof m.content === "string")?.content || "";
   if (body.tool === "video" && latestUserText.includes("Tool: Video Summary")) {
     const requestText = latestUserText.split("User request:").slice(1).join("User request:").trim();
-    const hasVideoUrl = /https?:\/\/(?:www\\.)?(?:youtube\.com\/watch\\?|youtu\.be\/)/i.test(requestText);
-    if (!requestText || (hasVideoUrl && requestText.replace(/https?:\/\/\\S+/g, "").trim().length < 500)) {
+    const hasVideoUrl = /https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?|youtu\.be\/)/i.test(requestText);
+    if (!requestText || (hasVideoUrl && requestText.replace(/https?:\/\/\S+/g, "").trim().length < 500)) {
       return res.status(200).json({ reply: "এই ফ্রি সেটআপে YouTube লিংক থেকে সরাসরি transcript নেওয়া যায় না। ভিডিওর transcript/subtitles বা নোট এখানে পেস্ট করুন—আমি সেগুলোর ভিত্তিতে সারাংশ তৈরি করব।" });
     }
   }
