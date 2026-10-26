@@ -64,6 +64,10 @@ async function callGemini(apiKey, messages, attachments = []) {
   const contents = isVideo && videoMatch
     ? [{ role: "user", parts }]
     : messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+  if (isImage && !isVideo) {
+    const lastUserContent = [...contents].reverse().find(item => item.role === "user");
+    if (lastUserContent) lastUserContent.parts = parts;
+  }
   if (attachments.length && !isVideo) {
     const lastUserContent = [...contents].reverse().find(item => item.role === "user");
     if (lastUserContent) {
@@ -75,11 +79,11 @@ async function callGemini(apiKey, messages, attachments = []) {
   const bodyObject = {
     systemInstruction: { parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate. Format answers clearly with Markdown when useful." }] },
     contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+    generationConfig: { temperature: 0.7, maxOutputTokens: 2048, ...(isImage ? { responseModalities: ["TEXT", "IMAGE"] } : {}) }
   };
   if (isWeb) bodyObject.tools = [{ google_search: {} }];
   const models = isImage
-    ? ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview"]
+    ? ["gemini-3.1-flash-image", "gemini-3-pro-image"]
     : ["gemini-3.8-flash", "gemini-3.6-flash"];
   let upstream;
   let modelUsed = models[0];
