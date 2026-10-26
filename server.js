@@ -298,7 +298,7 @@ app.get("/api/health", (_req, res) => {
     status: "ok",
     providers: {
       gemini: Boolean(process.env.GEMINI_API_KEY),
-      pollinationsImage: Boolean(process.env.POLLINATIONS_API_KEY),
+      freeImageGeneration: true,
       openrouter: Boolean(process.env.OPENROUTER_API_KEY)
     }
   });
