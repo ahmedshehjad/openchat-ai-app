@@ -276,6 +276,13 @@ button:active { transform:scale(.985); }
 }
 @media (max-width:380px) { .model-button { max-width:120px; } .home-feature { padding:9px; } .home-feature .tile-icon { width:31px; height:31px; flex-basis:31px; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition-duration:.01ms !important; animation-duration:.01ms !important; } }
+
+/* Fix: keep the model picker above the welcome feature cards on mobile and desktop. */
+.topbar { z-index: 30; }
+.topbar { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.model-wrap { position: relative; z-index: 31; }
+.model-menu { position: fixed; z-index: 100; }
+
 </style>
 </head>
 <body>
