@@ -199,12 +199,12 @@ function providerError(provider, status, detail) {
   return provider + " থেকে উত্তর পাওয়া যায়নি (HTTP " + status + ")। API key ও provider-এর usage limit যাচাই করুন।";
 }
 
-async function callAIHordeImage(prompt) {
+async function callAIHordeImage(prompt, sourceImage = null) {
   const agent = "OpenChatAI:1.0:https://ahmedshehjad.github.io/openchat-ai-app/";
   const headers = { "Content-Type": "application/json", "apikey": "0000000000", "Client-Agent": agent };
   const submit = await fetchWithTimeout("https://aihorde.net/api/v2/generate/async", {
     method: "POST", headers,
-    body: JSON.stringify({ prompt: prompt.slice(0, 4000), params: { sampler_name: "k_euler", steps: 20, width: 512, height: 512, n: 1, cfg_scale: 7 }, nsfw: false, censor_nsfw: true, r2: true, shared: true })
+    body: JSON.stringify({ prompt: prompt.slice(0, 4000), params: { sampler_name: "k_euler", steps: sourceImage ? 24 : 20, width: 512, height: 512, n: 1, cfg_scale: 7, ...(sourceImage ? { denoising_strength: 0.35 } : {}) }, ...(sourceImage ? { source_image: sourceImage, source_processing: "img2img" } : {}), nsfw: false, censor_nsfw: true, r2: true, shared: false })
   }, 30000);
   const job = await submit.json().catch(() => ({}));
   if (!submit.ok || !job.id) throw new Error("AI Horde ফ্রি সার্ভিসে অনুরোধ গ্রহণ হয়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
@@ -235,13 +235,15 @@ app.post("/api/chat", async (req, res) => {
   const config = MODEL_CONFIG[selected];
   const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
   const latestUserText = [...incomingMessages].reverse().find(m => m && m.role === "user" && typeof m.content === "string")?.content || "";
-  if (latestUserText.includes("Tool: Image Prompt Maker")) {
+  if (body.tool === "image" && latestUserText.includes("Tool: Image Prompt Maker")) {
     if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "ছবির বর্ণনা লিখুন।" });
     const promptMatch = latestUserText.split("User request:").slice(1).join("User request:").trim();
     const imagePrompt = promptMatch || latestUserText.replace("Tool: Image Prompt Maker", "").trim();
     if (!imagePrompt) return res.status(400).json({ error: "কী ধরনের ছবি চান তা লিখুন।" });
     try {
-      const answer = await callAIHordeImage("Create a polished, high-quality, safe-for-work image. Follow this user request closely. Avoid unintended text. User request: " + imagePrompt);
+      const reference = Array.isArray(body.attachments) ? body.attachments.find(item => item && typeof item.data === "string" && typeof item.mimeType === "string" && item.mimeType.startsWith("image/")) : null;
+      const protectedPrompt = reference ? "EDIT THE PROVIDED REFERENCE IMAGE. Preserve the same adult male subject and his recognizable face, face shape, eyes, nose, lips, hairstyle, beard, skin tone, and masculine appearance. Do not turn him into a woman, do not replace the person, and do not invent a different identity. Change only the requested outfit/background while keeping the face as close to the source as possible. User request: " + imagePrompt : "Create a polished, high-quality, safe-for-work image. Follow this user request closely. Avoid unintended text. User request: " + imagePrompt;
+      const answer = await callAIHordeImage(protectedPrompt, reference?.data || null);
       return res.status(200).json(answer);
     } catch (error) {
       const message = error?.name === "AbortError" ? "ফ্রি image worker-এর সঙ্গে সংযোগে সময় লেগেছে। আবার চেষ্টা করুন।" : (error.message || "ছবি তৈরি করা যায়নি।");
