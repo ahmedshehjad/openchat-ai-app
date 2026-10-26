@@ -300,7 +300,7 @@ app.post("/api/chat", async (req, res) => {
     if (!item || typeof item.data !== "string" || typeof item.mimeType !== "string") return res.status(400).json({ error: "আপলোড করা ফাইলটি পড়া যায়নি। আবার যোগ করুন।" });
     if (!(item.mimeType.startsWith("image/") || item.mimeType === "application/pdf")) return res.status(400).json({ error: "শুধু ছবি ও PDF সরাসরি বিশ্লেষণ করা যায়। TXT/MD/CSV/JSON ফাইলের লেখা চ্যাটে যুক্ত হয়।" });
     if (item.data.length > 11200000) return res.status(413).json({ error: "একটি ফাইল 8 MB-এর বেশি। ছোট ফাইল ব্যবহার করুন।" });
-    attachments.push({ name: typeof item.name === "string" ? item.name.slice(0, 180) : (item.mimeType === "application/pdf" ? "document.pdf" : "image"), mimeType: item.mimeType, data: item.data });
+    attachments.push({ name: typeof item.name === "string" ? item.name.slice(0, 180) : (item.mimeType === "application/pdf" ? "document.pdf" : "image"), mimeType: item.mimeType, data: item.data, width: Number.isInteger(item.width) && item.width > 0 ? Math.min(item.width, 4096) : 512, height: Number.isInteger(item.height) && item.height > 0 ? Math.min(item.height, 4096) : 512 });
   }
   if (attachments.length && config.provider !== "gemini" && selected !== "Nemotron 3.5 Super VL (Free)") return res.status(400).json({ error: "ছবি/PDF বিশ্লেষণের জন্য Nemotron 3.5 Super VL (Free) নির্বাচন করুন।" });
 
