@@ -1,48 +1,51 @@
 # Open AI Chat
 
-A responsive Bengali-friendly AI chat interface with a Node.js API backend.
+A mobile-first, Bengali-friendly AI chat web app with a Node.js API backend and an Android WebView wrapper.
+
+## Live services
+
+- Web app: https://ahmedshehjad.github.io/openchat-ai-app/
+- API service: https://openchat-ai-app-1.onrender.com
+- Source repository: https://github.com/ahmedshehjad/openchat-ai-app
+
+The static frontend is published by GitHub Pages. The Node.js API runs on Render and deploys automatically from the `main` branch.
 
 ## Current features
 
-- Mobile and desktop layouts with separate background image paths:
-  - `background-mobile.jpg.jpg`
+- Responsive mobile and desktop interface branded **Open AI Chat**
+- Separate desktop and mobile background photos with reduced opacity:
   - `background-desktop.jpg.jpg`
-- Chat context for the latest 20 messages
-- Model selector for Gemini Flash and OpenRouter free models
-- Image/PDF attachments for Gemini (up to 5 files, 8 MB per file, 10 MB combined)
-- TXT, MD, CSV and JSON file text is added to the prompt (text is limited before sending)
-- Image-generation mode using Gemini image models, when the Google API key/account has access
-- Server-side API keys; secrets must never be put in `index.html` or committed to GitHub
-- GitHub Pages frontend routed to the Render API service
+  - `background-mobile.jpg.jpg`
+- Model selector defaults to **OpenRouter Free (Auto)**; other listed free models:
+  - **Flint Coding (Free)**
+  - **North Mini Code (Free)**
+  - **Nemotron 3.5 Super VL (Free)** — intended for image/PDF understanding
+- Keeps the latest 20 chat messages as context in the current page session
+- Supports image/PDF attachments and text-based TXT, MD, CSV and JSON files, subject to app size limits and provider capabilities
+- Image generation uses the free AI Horde community queue; generation speed and availability depend on community capacity
+- Progressive Web App metadata and a dedicated Android WebView app icon
+- Android app loads the live GitHub Pages website, so website changes normally appear on the next app reload without reinstalling the APK
 
-## Deployment
+## Required provider setup
 
-The GitHub Pages site serves the static interface. It cannot run the Node.js API itself. The API runs on Render.
+The listed chat models are free-model routes, but **OpenRouter still requires an API key**. Set `OPENROUTER_API_KEY` in Render → `openchat-ai-app-1` → Environment. Keep the key only in Render environment variables; never put it in browser code or commit it to GitHub.
 
-- Repository: `ahmedshehjad/openchat-ai-app`
-- Frontend: https://ahmedshehjad.github.io/openchat-ai-app/
-- Primary API service: https://openchat-ai-app-1.onrender.com
-- Secondary API service: https://openchat-ai-app.onrender.com
-
-Render service settings currently use branch `main`, build command `npm install`, and start command `npm start`.
-
-## Environment variables
-
-Set the relevant key in Render → service → Environment:
-
-- `GEMINI_API_KEY` — Gemini chat, image/PDF analysis, and image generation where enabled
-- `OPENROUTER_API_KEY` — OpenRouter free-model routing and the listed OpenRouter models
-
-The app reports a clear error if a selected provider's key is missing. Do not send API keys in chat or expose them in browser code. Free providers may impose rate limits or change availability; model access depends on the provider account and current endpoint availability.
+Free model routes can change, be rate-limited, or become temporarily unavailable. Image generation uses AI Horde's community queue and may take time or return no result when capacity is limited. These services are not guaranteed to be continuously available.
 
 ## API
 
-- `POST /api/chat`
-- Request JSON includes `model`, `messages`, and optional `attachments`.
-- `GET /api/chat` returns `405 Method Not Allowed`; chat requests must use POST.
+- `POST /api/chat` — sends a chat request
+- `GET /api/health` — reports service/provider-key configuration status
+- `GET /api/chat` — returns `405 Method Not Allowed`; chat requests must use POST
 
-## Notes
+## Android APK
 
-- This is a web app/PWA-style frontend, not a compiled native Android application.
-- Conversation history is held in the current page session and is not persisted as a server-side account history.
-- Browser-side upload handling is implemented, but it still requires a live test with a real file and a configured provider key to confirm end-to-end behavior.
+The Android project is in `android-app/`. The GitHub Actions workflow builds a debug APK and uploads it as the `open-ai-chat-debug-apk` artifact. The APK is intended for testing/sideloading, not a signed Play Store release.
+
+Workflow: https://github.com/ahmedshehjad/openchat-ai-app/actions/workflows/android-apk.yml
+
+## Limitations
+
+- Chat history is kept in the current browser session; there is no server-side user account/history database.
+- Provider-dependent features need a valid configured provider key and a live provider endpoint.
+- The debug APK is not a Play Store-ready signed release.
