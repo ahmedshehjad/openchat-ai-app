@@ -4,7 +4,7 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.disable("x-powered-by");
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "15mb" }));
 
 const MODEL_CONFIG = {
   "Gemini Flash (Free)": { provider: "gemini", model: "gemini-3.8-flash", key: "GEMINI_API_KEY" },
@@ -33,7 +33,7 @@ async function fetchWithTimeout(url, options, timeoutMs = 45000) {
   }
 }
 
-async function callGemini(apiKey, messages) {
+async function callGemini(apiKey, messages, attachments = []) {
   const lastUser = [...messages].reverse().find(m => m.role === "user")?.content || "";
   const isWeb = lastUser.includes("Tool: Web Research");
   const isVideo = lastUser.includes("Tool: Video Summary");
@@ -53,6 +53,14 @@ async function callGemini(apiKey, messages) {
   const contents = isVideo && videoMatch
     ? [{ role: "user", parts }]
     : messages.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+  if (attachments.length && !isVideo) {
+    const lastUserContent = [...contents].reverse().find(item => item.role === "user");
+    if (lastUserContent) {
+      for (const attachment of attachments) {
+        lastUserContent.parts.push({ inline_data: { mime_type: attachment.mimeType, data: attachment.data } });
+      }
+    }
+  }
   const bodyObject = {
     systemInstruction: { parts: [{ text: "You are OpenChat AI, a helpful assistant. Reply in the user's language, including Bengali when appropriate. Format answers clearly with Markdown when useful." }] },
     contents,
@@ -153,10 +161,20 @@ app.post("/api/chat", async (req, res) => {
   if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "একটি মেসেজ পাঠান।" });
   const messages = normalizeMessages(body.messages);
   if (!messages.length || messages[messages.length - 1].role !== "user") return res.status(400).json({ error: "শেষ মেসেজটি user message হতে হবে।" });
+  const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
+  if (rawAttachments.length > 5) return res.status(400).json({ error: "একসঙ্গে সর্বোচ্চ 5টি ছবি/PDF পাঠানো যাবে।" });
+  const attachments = [];
+  for (const item of rawAttachments) {
+    if (!item || typeof item.data !== "string" || typeof item.mimeType !== "string") return res.status(400).json({ error: "আপলোড করা ফাইলটি পড়া যায়নি। আবার যোগ করুন।" });
+    if (!(item.mimeType.startsWith("image/") || item.mimeType === "application/pdf")) return res.status(400).json({ error: "শুধু ছবি ও PDF সরাসরি বিশ্লেষণ করা যায়। TXT/MD/CSV/JSON ফাইলের লেখা চ্যাটে যুক্ত হয়।" });
+    if (item.data.length > 11200000) return res.status(413).json({ error: "একটি ফাইল 8 MB-এর বেশি। ছোট ফাইল ব্যবহার করুন।" });
+    attachments.push({ mimeType: item.mimeType, data: item.data });
+  }
+  if (attachments.length && config.provider !== "gemini") return res.status(400).json({ error: "ছবি/PDF বিশ্লেষণের জন্য Gemini Flash (Free) নির্বাচন করুন। নির্বাচিত মডেলটি সরাসরি ফাইল গ্রহণ করে না।" });
 
   try {
     let answer;
-    if (config.provider === "gemini") answer = await callGemini(apiKey, messages);
+    if (config.provider === "gemini") answer = await callGemini(apiKey, messages, attachments);
     else if (config.provider === "openai") answer = await callOpenAI(apiKey, messages, config.model);
     else if (config.provider === "anthropic") answer = await callAnthropic(apiKey, messages, config.model);
     else answer = await callOpenRouter(apiKey, messages, config.model);
