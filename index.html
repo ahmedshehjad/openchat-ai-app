@@ -138,7 +138,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent);
   .topbar { padding-left: 28px; padding-right: 28px; }
   .mobile-brand { font-size: 25px; }
   .model-button { max-width: 240px; padding: 9px 12px; gap: 10px; font-size: 14px; }
-  .model-menu { position: absolute; top: calc(100% + 8px); left: 0; width: 260px; max-height: min(60dvh, 420px); }
+  .model-menu { width: min(280px, calc(100vw - 24px)); max-height: min(60dvh, 420px); }
   .chat-scroll { padding: 8px 28px 18px; }
   .welcome { max-width: 780px; margin: 0 auto; padding-top: 14px; }
   .home-feature { padding: 18px; }
@@ -221,6 +221,7 @@ let toastTimer;
 function notify(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2600)}
 function closeMenu(){modelMenu.classList.remove('open');modelButton.setAttribute('aria-expanded','false')}
 modelButton.addEventListener('click',e=>{e.stopPropagation();const open=!modelMenu.classList.contains('open');modelMenu.classList.toggle('open',open);modelButton.setAttribute('aria-expanded',String(open))});
+['pointerdown','touchstart','touchmove','wheel'].forEach(type=>modelMenu.addEventListener(type,e=>e.stopPropagation(),{passive:true}));
 modelMenu.addEventListener('click',e=>{const option=e.target.closest('[data-model]');if(!option)return;selectedModel=option.dataset.model;$('modelName').textContent=selectedModel;modelMenu.querySelectorAll('[data-model]').forEach(el=>{const selected=el===option;el.setAttribute('aria-selected',String(selected));el.lastElementChild.textContent=selected?'✓':''});closeMenu()});
 document.addEventListener('click',e=>{if(!modelMenu.contains(e.target)&&!modelButton.contains(e.target))closeMenu()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
