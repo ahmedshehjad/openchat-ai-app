@@ -188,7 +188,7 @@ async function callOpenRouter(apiKey, messages, model, attachments = []) {
     })
   });
   const data = await upstream.json().catch(() => ({}));
-  if (!upstream.ok) throw new Error(providerError("OpenRouter", upstream.status, data.error?.message));
+  if (!upstream.ok) { const error = new Error(providerError("OpenRouter", upstream.status, data.error?.message)); error.status = upstream.status; throw error; }
   return { reply: data.choices?.[0]?.message?.content?.trim(), modelUsed: data.model || model };
 }
 
@@ -322,7 +322,7 @@ app.post("/api/chat", async (req, res) => {
       try {
         answer = await callOpenRouter(apiKey, messages, config.model, attachments);
       } catch (error) {
-        if (selected === "Nemotron 3 Ultra (Free)" && /HTTP (?:404|429|503)/.test(error.message || "")) {
+        if (selected === "Nemotron 3 Ultra (Free)" && [404, 429, 503].includes(error.status)) {
           answer = await callOpenRouter(apiKey, messages, "openrouter/free", attachments);
         } else {
           throw error;
