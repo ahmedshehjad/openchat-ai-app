@@ -26,9 +26,10 @@ const MODEL_CONFIG = {
 };
 
 function normalizeMessages(input) {
-  return input.slice(-20).map(item => {
+  return input.slice(-20).map((item, index, recent) => {
     if (!item || !["user", "assistant"].includes(item.role) || typeof item.content !== "string") return null;
-    const content = item.content.trim().slice(0, 8000);
+    const maxChars = index === recent.length - 1 && item.role === "user" ? 32000 : 8000;
+    const content = item.content.trim().slice(0, maxChars);
     if (!content) return null;
     return { role: item.role, content };
   }).filter(Boolean);
@@ -209,6 +210,17 @@ app.post("/api/chat", async (req, res) => {
     const message = error?.name === "AbortError" ? "AI উত্তর দিতে বেশি সময় নিচ্ছে। আবার চেষ্টা করুন।" : (error.message || "AI সার্ভারে সংযোগ করা যায়নি।");
     return res.status(502).json({ error: message });
   }
+});
+
+app.get("/api/health", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  return res.status(200).json({
+    status: "ok",
+    providers: {
+      gemini: Boolean(process.env.GEMINI_API_KEY),
+      openrouter: Boolean(process.env.OPENROUTER_API_KEY)
+    }
+  });
 });
 
 app.get("/api/chat", (_req, res) => { res.setHeader("Allow", "POST"); return res.status(405).json({ error: "শুধু POST request গ্রহণ করা হয়।" }); });
