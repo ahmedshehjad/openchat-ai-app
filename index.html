@@ -184,8 +184,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent);
 <div class="model-wrap"><button class="model-button" id="modelButton" aria-haspopup="listbox" aria-expanded="false"><span id="modelName">Gemini Flash (Free)</span><span class="chevron">⌄</span></button>
 <div class="model-menu" id="modelMenu" role="listbox" aria-label="Choose model">
 <div class="model-note">CHOOSE A MODEL</div>
-<button class="model-option" role="option" aria-selected="true" data-model="Gemini Flash (Free)">Gemini Flash (Free) <span>✓</span></button>
-<button class="model-option" role="option" aria-selected="false" data-model="OpenRouter Free (Auto)">OpenRouter Free (Auto) <span></span></button>
+<button class="model-option" role="option" aria-selected="true" data-model="OpenRouter Free (Auto)">OpenRouter Free (Auto) <span>✓</span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Flint Coding (Free)">Flint Coding (Free) <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="North Mini Code (Free)">North Mini Code (Free) <span></span></button>
 <button class="model-option" role="option" aria-selected="false" data-model="Nemotron 3.5 Super VL (Free)">Nemotron 3.5 Super VL (Free) <span></span></button>
@@ -216,7 +215,7 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent);
 (function(){
 const $=id=>document.getElementById(id);
 const modelButton=$('modelButton'),modelMenu=$('modelMenu'),prompt=$('prompt'),messages=$('messages'),welcome=$('welcome'),chatScroll=$('chatScroll'),toast=$('toast');
-let selectedModel='Gemini Flash (Free)';
+let selectedModel='OpenRouter Free (Auto)';
 let toastTimer;
 function notify(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2600)}
 function closeMenu(){modelMenu.classList.remove('open');modelButton.setAttribute('aria-expanded','false')}
