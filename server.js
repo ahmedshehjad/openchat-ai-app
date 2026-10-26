@@ -21,7 +21,8 @@ const MODEL_CONFIG = {
   "OpenRouter Free (Auto)": { provider: "openrouter", model: "openrouter/free", key: "OPENROUTER_API_KEY" },
   "Flint Coding (Free)": { provider: "openrouter", model: "recursive/flint-v1.0:free", key: "OPENROUTER_API_KEY" },
   "North Mini Code (Free)": { provider: "openrouter", model: "cohere/north-mini-code:free", key: "OPENROUTER_API_KEY" },
-  "Nemotron 3.5 Super VL (Free)": { provider: "openrouter", model: "nvidia/nemotron-3.5-super-vl:free", key: "OPENROUTER_API_KEY" }
+  "Nemotron 3.5 Super VL (Free)": { provider: "openrouter", model: "nvidia/nemotron-3.5-super-vl:free", key: "OPENROUTER_API_KEY" },
+  "Nemotron 3 Ultra (Free)": { provider: "openrouter", model: "nvidia/nemotron-3-ultra-550b-a55b:free", key: "OPENROUTER_API_KEY" }
 };
 
 function normalizeMessages(input) {
@@ -199,12 +200,12 @@ function providerError(provider, status, detail) {
   return provider + " থেকে উত্তর পাওয়া যায়নি (HTTP " + status + ")। API key ও provider-এর usage limit যাচাই করুন।";
 }
 
-async function callAIHordeImage(prompt, sourceImage = null) {
+async function callAIHordeImage(prompt, sourceImage = null, sourceWidth = 512, sourceHeight = 512) {
   const agent = "OpenChatAI:1.0:https://ahmedshehjad.github.io/openchat-ai-app/";
   const headers = { "Content-Type": "application/json", "apikey": "0000000000", "Client-Agent": agent };
   const submit = await fetchWithTimeout("https://aihorde.net/api/v2/generate/async", {
     method: "POST", headers,
-    body: JSON.stringify({ prompt: prompt.slice(0, 4000), params: { sampler_name: "k_euler", steps: sourceImage ? 24 : 20, width: 512, height: 512, n: 1, cfg_scale: 7, ...(sourceImage ? { denoising_strength: 0.35 } : {}) }, ...(sourceImage ? { source_image: sourceImage, source_processing: "img2img" } : {}), nsfw: false, censor_nsfw: true, r2: true, shared: false })
+    body: JSON.stringify({ prompt: prompt.slice(0, 4000), params: { sampler_name: "k_euler", steps: sourceImage ? 24 : 20, width: sourceImage ? Math.min(1024, Math.max(512, Math.round((512 * (sourceWidth / Math.max(1, sourceHeight))) / 64) * 64)) : 512, height: sourceImage ? Math.min(1024, Math.max(512, Math.round((512 * (sourceHeight / Math.max(1, sourceWidth))) / 64) * 64)) : 512, n: 1, cfg_scale: 7, ...(sourceImage ? { denoising_strength: 0.25 } : {}) }, ...(sourceImage ? { source_image: sourceImage, source_processing: "img2img" } : {}), nsfw: false, censor_nsfw: true, r2: true, shared: false })
   }, 30000);
   const job = await submit.json().catch(() => ({}));
   if (!submit.ok || !job.id) throw new Error("AI Horde ফ্রি সার্ভিসে অনুরোধ গ্রহণ হয়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
@@ -242,8 +243,8 @@ app.post("/api/chat", async (req, res) => {
     if (!imagePrompt) return res.status(400).json({ error: "কী ধরনের ছবি চান তা লিখুন।" });
     try {
       const reference = Array.isArray(body.attachments) ? body.attachments.find(item => item && typeof item.data === "string" && typeof item.mimeType === "string" && item.mimeType.startsWith("image/")) : null;
-      const protectedPrompt = reference ? "EDIT THE PROVIDED REFERENCE IMAGE. Preserve the same adult male subject and his recognizable face, face shape, eyes, nose, lips, hairstyle, beard, skin tone, and masculine appearance. Do not turn him into a woman, do not replace the person, and do not invent a different identity. Change only the requested outfit/background while keeping the face as close to the source as possible. User request: " + imagePrompt : "Create a polished, high-quality, safe-for-work image. Follow this user request closely. Avoid unintended text. User request: " + imagePrompt;
-      const answer = await callAIHordeImage(protectedPrompt, reference?.data || null);
+      const protectedPrompt = reference ? "EDIT THE PROVIDED REFERENCE IMAGE. Preserve the same person and recognizable identity exactly as closely as possible, including face shape, eyes, nose, lips, hairstyle, facial hair, skin tone, age appearance, and gender presentation shown in the source. Do not change the person into another gender, replace the subject, or invent a different identity. Change only the outfit/background and explicitly requested details. Keep the source composition and proportions. User request: " + imagePrompt : "Create a polished, high-quality, safe-for-work image. Follow this user request closely. Avoid unintended text. User request: " + imagePrompt;
+      const answer = await callAIHordeImage(protectedPrompt, reference?.data || null, reference?.width || 512, reference?.height || 512);
       return res.status(200).json(answer);
     } catch (error) {
       const message = error?.name === "AbortError" ? "ফ্রি image worker-এর সঙ্গে সংযোগে সময় লেগেছে। আবার চেষ্টা করুন।" : (error.message || "ছবি তৈরি করা যায়নি।");
