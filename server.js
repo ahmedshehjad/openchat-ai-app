@@ -199,25 +199,33 @@ function providerError(provider, status, detail) {
   return provider + " থেকে উত্তর পাওয়া যায়নি (HTTP " + status + ")। API key ও provider-এর usage limit যাচাই করুন।";
 }
 
-async function callPollinationsImage(apiKey, prompt) {
-  const model = "black-forest-labs/flux.1-schnell";
-  const url = "https://gen.pollinations.ai/image/" + encodeURIComponent(prompt.slice(0, 4000)) +
-    "?model=" + encodeURIComponent(model) + "&width=1024&height=1024&safe=true";
-  const upstream = await fetchWithTimeout(url, {
-    method: "GET",
-    headers: { Authorization: "Bearer " + apiKey, Accept: "image/*" }
-  }, 90000);
-  if (!upstream.ok) {
-    const detail = await upstream.text().catch(() => "");
-    throw new Error(providerError("Pollinations image", upstream.status, detail.slice(0, 300)));
+async function callAIHordeImage(prompt) {
+  const agent = "OpenChatAI:1.0:https://ahmedshehjad.github.io/openchat-ai-app/";
+  const headers = { "Content-Type": "application/json", "apikey": "0000000000", "Client-Agent": agent };
+  const submit = await fetchWithTimeout("https://aihorde.net/api/v2/generate/async", {
+    method: "POST", headers,
+    body: JSON.stringify({ prompt: prompt.slice(0, 4000), params: { sampler_name: "k_euler", steps: 20, width: 512, height: 512, n: 1, cfg_scale: 7 }, nsfw: false, censor_nsfw: true, r2: true, shared: true })
+  }, 30000);
+  const job = await submit.json().catch(() => ({}));
+  if (!submit.ok || !job.id) throw new Error("AI Horde ফ্রি সার্ভিসে অনুরোধ গ্রহণ হয়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
+  const deadline = Date.now() + 180000;
+  while (Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    const poll = await fetchWithTimeout("https://aihorde.net/api/v2/generate/status/" + encodeURIComponent(job.id), { headers: { "apikey": "0000000000", "Client-Agent": agent } }, 20000);
+    const status = await poll.json().catch(() => ({}));
+    if (!poll.ok) throw new Error("AI Horde-তে ছবির অবস্থা যাচাই করা যায়নি।");
+    if (status.faulted) throw new Error("ফ্রি image worker অনুরোধটি তৈরি করতে পারেনি। আবার চেষ্টা করুন।");
+    if (status.done && status.generations && status.generations.length) {
+      const imageUrl = status.generations[0].img;
+      if (!imageUrl || !imageUrl.startsWith("http")) throw new Error("AI Horde বৈধ image URL দেয়নি।");
+      const imageResponse = await fetchWithTimeout(imageUrl, {}, 45000);
+      if (!imageResponse.ok) throw new Error("তৈরি হওয়া ছবিটি ডাউনলোড করা যায়নি।");
+      const mimeType = imageResponse.headers.get("content-type") || "image/webp";
+      const data = Buffer.from(await imageResponse.arrayBuffer()).toString("base64");
+      return { reply: "ছবি তৈরি হয়েছে — AI Horde (ফ্রি কমিউনিটি সার্ভিস)", imageData: { mimeType, data }, modelUsed: status.generations[0].model || "AI Horde volunteer worker" };
+    }
   }
-  const mimeType = upstream.headers.get("content-type") || "image/jpeg";
-  if (!mimeType.startsWith("image/")) {
-    const detail = await upstream.text().catch(() => "");
-    throw new Error("ছবি তৈরি হয়নি। Pollinations থেকে অপ্রত্যাশিত উত্তর এসেছে: " + detail.slice(0, 180));
-  }
-  const data = Buffer.from(await upstream.arrayBuffer()).toString("base64");
-  return { reply: "ছবি তৈরি হয়েছে — FLUX.1 Schnell", imageData: { mimeType, data }, modelUsed: model };
+  throw new Error("ফ্রি সার্ভারের queue অনেক দীর্ঘ। পরে আবার চেষ্টা করুন।");
 }
 
 app.post("/api/chat", async (req, res) => {
@@ -229,16 +237,14 @@ app.post("/api/chat", async (req, res) => {
   const latestUserText = [...incomingMessages].reverse().find(m => m && m.role === "user" && typeof m.content === "string")?.content || "";
   if (latestUserText.includes("Tool: Image Prompt Maker")) {
     if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "ছবির বর্ণনা লিখুন।" });
-    const imageKey = process.env.POLLINATIONS_API_KEY;
-    if (!imageKey) return res.status(503).json({ error: "ছবি তৈরির জন্য Render → Environment-এ POLLINATIONS_API_KEY যোগ করুন। Key তৈরি করুন https://enter.pollinations.ai/ থেকে। API key কখনো GitHub বা ওয়েবপেজের কোডে দেবেন না।" });
     const promptMatch = latestUserText.split("User request:").slice(1).join("User request:").trim();
     const imagePrompt = promptMatch || latestUserText.replace("Tool: Image Prompt Maker", "").trim();
     if (!imagePrompt) return res.status(400).json({ error: "কী ধরনের ছবি চান তা লিখুন।" });
     try {
-      const answer = await callPollinationsImage(imageKey, "Create a polished, high-quality image. Follow this user request closely. Avoid watermarks and unintended text. User request: " + imagePrompt);
+      const answer = await callAIHordeImage("Create a polished, high-quality, safe-for-work image. Follow this user request closely. Avoid unintended text. User request: " + imagePrompt);
       return res.status(200).json(answer);
     } catch (error) {
-      const message = error?.name === "AbortError" ? "ছবি তৈরি করতে বেশি সময় লাগছে। আবার চেষ্টা করুন।" : (error.message || "ছবি তৈরি করা যায়নি।");
+      const message = error?.name === "AbortError" ? "ফ্রি image worker-এর সঙ্গে সংযোগে সময় লেগেছে। আবার চেষ্টা করুন।" : (error.message || "ছবি তৈরি করা যায়নি।");
       return res.status(502).json({ error: message });
     }
   }
