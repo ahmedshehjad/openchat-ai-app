@@ -266,7 +266,7 @@ app.post("/api/chat", async (req, res) => {
     if (item.data.length > 11200000) return res.status(413).json({ error: "একটি ফাইল 8 MB-এর বেশি। ছোট ফাইল ব্যবহার করুন।" });
     attachments.push({ name: typeof item.name === "string" ? item.name.slice(0, 180) : (item.mimeType === "application/pdf" ? "document.pdf" : "image"), mimeType: item.mimeType, data: item.data });
   }
-  if (attachments.length && config.provider !== "gemini" && selected !== "Nemotron 3.5 Super VL (Free)") return res.status(400).json({ error: "ছবি/PDF বিশ্লেষণের জন্য Gemini Flash (Free) অথবা Nemotron 3.5 Super VL (Free) নির্বাচন করুন।" });
+  if (attachments.length && config.provider !== "gemini" && selected !== "Nemotron 3.5 Super VL (Free)") return res.status(400).json({ error: "ছবি/PDF বিশ্লেষণের জন্য Nemotron 3.5 Super VL (Free) নির্বাচন করুন।" });
 
   try {
     let answer;
