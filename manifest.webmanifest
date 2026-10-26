@@ -1,0 +1,18 @@
+{
+  "name": "Open AI Chat",
+  "short_name": "Open AI Chat",
+  "description": "SMART • FAST • HELPFUL",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101114",
+  "theme_color": "#101114",
+  "icons": [
+    {
+      "src": "./open-ai-chat-icon.jpg",
+      "sizes": "128x128",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
