@@ -19,7 +19,7 @@ The static frontend is published by GitHub Pages. The Node.js API runs on Render
 - Model selector defaults to **Nemotron 3 Ultra (Free)** for advanced reasoning; **OpenRouter Free (Auto)** remains available as a fallback option, alongside **Flint Coding (Free)**, **North Mini Code (Free)**, and **Nemotron 3.5 Super VL (Free)** for image/PDF understanding
 - Keeps the latest 20 chat messages as context in the current page session
 - Supports image/PDF attachments and text-based TXT, MD, CSV and JSON files, subject to app size limits and provider capabilities
-- Image generation and reference-photo editing use the free AI Horde community queue; reference-photo editing uses image-to-image with source proportions and conservative denoising, but exact identity preservation cannot be guaranteed
+- Image generation and reference-photo editing are temporarily disabled after removing AI Horde because it repeatedly produced inaccurate results. They will be re-enabled only after a suitable no-billing alternative is tested.
 - Web Research uses a free DuckDuckGo HTML search flow and cites returned source URLs; it can be rate-limited or temporarily unavailable
 - Video Summary summarizes pasted transcripts/subtitles/notes; direct YouTube transcript extraction is not included in the free backend
 - Progressive Web App metadata and a dedicated Android WebView app icon
@@ -29,7 +29,7 @@ The static frontend is published by GitHub Pages. The Node.js API runs on Render
 
 The listed chat models are free-model routes, but **OpenRouter still requires an API key**. Set `OPENROUTER_API_KEY` in Render → `openchat-ai-app-1` → Environment. Keep the key only in Render environment variables; never put it in browser code or commit it to GitHub.
 
-Free model routes can change, be rate-limited, or become temporarily unavailable. Image generation and reference-photo editing are performed by volunteer community workers; uploaded photos leave the browser and are processed by the service/worker. Do not upload sensitive photos. No free model can guarantee an identical face. DuckDuckGo HTML search can also be throttled. These services are not guaranteed to be continuously available.
+Free model routes can change, be rate-limited, or become temporarily unavailable. Image generation and reference-photo editing are currently disabled while a more reliable no-billing provider is evaluated. DuckDuckGo HTML search can also be throttled. These services are not guaranteed to be continuously available.
 
 ## API
 
