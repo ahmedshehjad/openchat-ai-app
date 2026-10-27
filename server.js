@@ -22,7 +22,11 @@ const MODEL_CONFIG = {
   "Flint Coding (Free)": { provider: "openrouter", model: "recursive/flint-v1.0:free", key: "OPENROUTER_API_KEY" },
   "North Mini Code (Free)": { provider: "openrouter", model: "cohere/north-mini-code:free", key: "OPENROUTER_API_KEY" },
   "Nemotron 3.5 Super VL (Free)": { provider: "openrouter", model: "nvidia/nemotron-3.5-super-vl:free", key: "OPENROUTER_API_KEY" },
-  "Nemotron 3 Ultra (Free)": { provider: "openrouter", model: "nvidia/nemotron-3-ultra-550b-a55b:free", key: "OPENROUTER_API_KEY" }
+  "Nemotron 3 Ultra (Free)": { provider: "openrouter", model: "nvidia/nemotron-3-ultra-550b-a55b:free", key: "OPENROUTER_API_KEY" },
+  "gemini-3.8-flash": { provider: "gemini", model: "gemini-3.8-flash", key: "GEMINI_API_KEY" },
+  "gemini-3.6-flash": { provider: "gemini", model: "gemini-3.6-flash", key: "GEMINI_API_KEY" },
+  "gemini-3.5-flash-lite": { provider: "gemini", model: "gemini-3.5-flash-lite", key: "GEMINI_API_KEY" },
+  "gemini-3.1-flash-lite": { provider: "gemini", model: "gemini-3.1-flash-lite", key: "GEMINI_API_KEY" }
 };
 
 function normalizeMessages(input) {
@@ -45,7 +49,7 @@ async function fetchWithTimeout(url, options, timeoutMs = 45000) {
   }
 }
 
-async function callGemini(apiKey, messages, attachments = []) {
+async function callGemini(apiKey, messages, attachments = [], requestedModel = "gemini-3.8-flash") {
   const lastUser = [...messages].reverse().find(m => m.role === "user")?.content || "";
   const isWeb = lastUser.includes("Tool: Web Research");
   const isVideo = lastUser.includes("Tool: Video Summary");
@@ -85,7 +89,7 @@ async function callGemini(apiKey, messages, attachments = []) {
   if (isWeb) bodyObject.tools = [{ google_search: {} }];
   const models = isImage
     ? ["gemini-3.1-flash-image", "gemini-3-pro-image"]
-    : ["gemini-3.8-flash", "gemini-3.6-flash"];
+    : [requestedModel, ...["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"].filter(model => model !== requestedModel)];
   let upstream;
   let modelUsed = models[0];
   let lastRequestError;
@@ -96,7 +100,7 @@ async function callGemini(apiKey, messages, attachments = []) {
         method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify(bodyObject)
       }, 40000);
-      if ((upstream.status === 503 || upstream.status === 429 || (isImage && upstream.status === 404)) && i < models.length - 1) {
+      if (([400, 403, 404, 429, 503].includes(upstream.status)) && i < models.length - 1) {
         console.warn("Gemini model unavailable; trying fallback model:", modelUsed, "HTTP", upstream.status);
         continue;
       }
@@ -315,7 +319,7 @@ app.post("/api/chat", async (req, res) => {
       const researchedMessages = messages.slice(0, -1).concat({ role: "user", content: latestUserText + "\\n\\nWeb search results (use as source material; cite these exact URLs and do not invent other sources):\\n" + context });
       answer = await callOpenRouter(apiKey, researchedMessages, config.model, attachments);
     }
-    else if (config.provider === "gemini") answer = await callGemini(apiKey, messages, attachments);
+    else if (config.provider === "gemini") answer = await callGemini(apiKey, messages, attachments, config.model);
     else if (config.provider === "openai") answer = await callOpenAI(apiKey, messages, config.model);
     else if (config.provider === "anthropic") answer = await callAnthropic(apiKey, messages, config.model);
     else {
