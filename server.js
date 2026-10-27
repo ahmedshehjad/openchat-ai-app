@@ -89,7 +89,7 @@ async function callGemini(apiKey, messages, attachments = [], requestedModel = "
   if (isWeb) bodyObject.tools = [{ google_search: {} }];
   const models = isImage
     ? ["gemini-3.1-flash-image", "gemini-3-pro-image"]
-    : [requestedModel, ...["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"].filter(model => model !== requestedModel)];
+    : [requestedModel, ...["gemini-3.6-flash", "gemini-3.1-flash-lite"].filter(model => model !== requestedModel)];
   let upstream;
   let modelUsed = models[0];
   let lastRequestError;
