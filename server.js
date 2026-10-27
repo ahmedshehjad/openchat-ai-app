@@ -230,34 +230,6 @@ async function searchDuckDuckGo(query) {
   return results;
 }
 
-async function callAIHordeImage(prompt, sourceImage = null, sourceWidth = 512, sourceHeight = 512) {
-  const agent = "OpenChatAI:1.0:https://ahmedshehjad.github.io/openchat-ai-app/";
-  const headers = { "Content-Type": "application/json", "apikey": "0000000000", "Client-Agent": agent };
-  const submit = await fetchWithTimeout("https://aihorde.net/api/v2/generate/async", {
-    method: "POST", headers,
-    body: JSON.stringify({ prompt: prompt.slice(0, 4000), params: { sampler_name: "k_euler", steps: sourceImage ? 24 : 20, width: sourceImage ? Math.min(1024, Math.max(512, Math.round((512 * (sourceWidth / Math.max(1, sourceHeight))) / 64) * 64)) : 512, height: sourceImage ? Math.min(1024, Math.max(512, Math.round((512 * (sourceHeight / Math.max(1, sourceWidth))) / 64) * 64)) : 512, n: 1, cfg_scale: 7, ...(sourceImage ? { denoising_strength: 0.25 } : {}) }, ...(sourceImage ? { source_image: sourceImage, source_processing: "img2img" } : {}), nsfw: false, censor_nsfw: true, r2: true, shared: false })
-  }, 30000);
-  const job = await submit.json().catch(() => ({}));
-  if (!submit.ok || !job.id) throw new Error("AI Horde ফ্রি সার্ভিসে অনুরোধ গ্রহণ হয়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।");
-  const deadline = Date.now() + 180000;
-  while (Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    const poll = await fetchWithTimeout("https://aihorde.net/api/v2/generate/status/" + encodeURIComponent(job.id), { headers: { "apikey": "0000000000", "Client-Agent": agent } }, 20000);
-    const status = await poll.json().catch(() => ({}));
-    if (!poll.ok) throw new Error("AI Horde-তে ছবির অবস্থা যাচাই করা যায়নি।");
-    if (status.faulted) throw new Error("ফ্রি image worker অনুরোধটি তৈরি করতে পারেনি। আবার চেষ্টা করুন।");
-    if (status.done && status.generations && status.generations.length) {
-      const imageUrl = status.generations[0].img;
-      if (!imageUrl || !imageUrl.startsWith("http")) throw new Error("AI Horde বৈধ image URL দেয়নি।");
-      const imageResponse = await fetchWithTimeout(imageUrl, {}, 45000);
-      if (!imageResponse.ok) throw new Error("তৈরি হওয়া ছবিটি ডাউনলোড করা যায়নি।");
-      const mimeType = imageResponse.headers.get("content-type") || "image/webp";
-      const data = Buffer.from(await imageResponse.arrayBuffer()).toString("base64");
-      return { reply: "ছবি তৈরি হয়েছে — AI Horde (ফ্রি কমিউনিটি সার্ভিস)", imageData: { mimeType, data }, modelUsed: status.generations[0].model || "AI Horde volunteer worker" };
-    }
-  }
-  throw new Error("ফ্রি সার্ভারের queue অনেক দীর্ঘ। পরে আবার চেষ্টা করুন।");
-}
 
 app.post("/api/chat", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -274,19 +246,9 @@ app.post("/api/chat", async (req, res) => {
     }
   }
   if (body.tool === "image" && latestUserText.includes("Tool: Image Prompt Maker")) {
-    if (!Array.isArray(body.messages) || body.messages.length === 0) return res.status(400).json({ error: "ছবির বর্ণনা লিখুন।" });
-    const promptMatch = latestUserText.split("User request:").slice(1).join("User request:").trim();
-    const imagePrompt = promptMatch || latestUserText.replace("Tool: Image Prompt Maker", "").trim();
-    if (!imagePrompt) return res.status(400).json({ error: "কী ধরনের ছবি চান তা লিখুন।" });
-    try {
-      const reference = Array.isArray(body.attachments) ? body.attachments.find(item => item && typeof item.data === "string" && typeof item.mimeType === "string" && item.mimeType.startsWith("image/")) : null;
-      const protectedPrompt = reference ? "EDIT THE PROVIDED REFERENCE IMAGE. Preserve the same person and recognizable identity exactly as closely as possible, including face shape, eyes, nose, lips, hairstyle, facial hair, skin tone, age appearance, and gender presentation shown in the source. Do not change the person into another gender, replace the subject, or invent a different identity. Change only the outfit/background and explicitly requested details. Keep the source composition and proportions. User request: " + imagePrompt : "Create a polished, high-quality, safe-for-work image. Follow this user request closely. Avoid unintended text. User request: " + imagePrompt;
-      const answer = await callAIHordeImage(protectedPrompt, reference?.data || null, reference?.width || 512, reference?.height || 512);
-      return res.status(200).json(answer);
-    } catch (error) {
-      const message = error?.name === "AbortError" ? "ফ্রি image worker-এর সঙ্গে সংযোগে সময় লেগেছে। আবার চেষ্টা করুন।" : (error.message || "ছবি তৈরি করা যায়নি।");
-      return res.status(502).json({ error: message });
-    }
+    return res.status(503).json({
+      error: "AI Horde-কে ভুল ছবি তৈরির কারণে বন্ধ করা হয়েছে। যাচাই করা, বিনা বিলিংয়ের বিকল্প পাওয়া গেলে ইমেজ জেনারেশন আবার চালু করা হবে।"
+    });
   }
   if (!config) return res.status(400).json({ error: "মডেলটি তালিকায় নেই।" });
   const apiKey = process.env[config.key];
