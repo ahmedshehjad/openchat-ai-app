@@ -11,6 +11,8 @@ import androidx.activity.ComponentActivity
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import android.webkit.WebResourceRequest
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
@@ -28,7 +30,13 @@ class MainActivity : ComponentActivity() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
                 loader.shouldInterceptRequest(request.url)
         }
+        ViewCompat.setOnApplyWindowInsetsListener(web) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(view.paddingLeft, systemBars.top, view.paddingRight, systemBars.bottom)
+            insets
+        }
         setContentView(web)
+        ViewCompat.requestApplyInsets(web)
         web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
     inner class NativeBridge {
