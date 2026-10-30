@@ -6,12 +6,11 @@ import android.content.Context
 import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
-import androidx.webkit.WebResourceRequest
+import android.webkit.WebResourceRequest
 
 class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
