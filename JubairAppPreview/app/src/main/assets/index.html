@@ -12,7 +12,7 @@ function load(){try{code={...defaults,...JSON.parse(localStorage.getItem('jubair
 function save(){code[kind]=editor.value;try{localStorage.setItem('jubair-code',JSON.stringify(code))}catch{}document.getElementById('count').textContent=editor.value.length+' characters'}
 function render(){save();const doc='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+code.css+'</style></head><body>'+code.html+'<script>'+code.js+'<\/script></body></html>';frame.srcdoc=doc;document.getElementById('status').textContent='Preview updated'}
 function sizePreview(w){frame.style.maxWidth=w;frame.style.margin='0 auto'}
-function copyCode(){save();const value='<!-- HTML -->\n'+code.html+'\n<style>\n'+code.css+'\n</style>\n<script>\n'+code.js+'\n</script>';if(window.Native)Native.copy(value);else navigator.clipboard?.writeText(value)}
+function copyCode(){save();const value='<!-- HTML -->\n'+code.html+'\n<style>\n'+code.css+'\n</style>\n<script>\n'+code.js+'\n<'+'/script>';if(window.Native)Native.copy(value);else navigator.clipboard?.writeText(value)}
 function resetCode(){code={...defaults};editor.value=code[kind];render()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{save();kind=b.dataset.kind;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));editor.value=code[kind]});
 editor.addEventListener('input',()=>{save();clearTimeout(window.previewTimer);window.previewTimer=setTimeout(render,450)});
