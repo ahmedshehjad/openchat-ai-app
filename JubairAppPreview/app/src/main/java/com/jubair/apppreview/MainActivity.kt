@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
         web.settings.allowFileAccess = false
-        web.settings.allowContentAccess = false
+        web.settings.allowContentAccess = false\n        web.settings.javaScriptCanOpenWindowsAutomatically = false
         web.addJavascriptInterface(NativeBridge(), "Native")
         web.webViewClient = object : WebViewClientCompat() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
             runOnUiThread { Toast.makeText(this@MainActivity, "Copied", Toast.LENGTH_SHORT).show() }
         }
     }
-    override fun onDestroy() {
+    override fun onBackPressed() {\n        if (::web.isInitialized && web.canGoBack()) web.goBack() else super.onBackPressed()\n    }\n    override fun onDestroy() {
         if (::web.isInitialized) web.destroy()
         super.onDestroy()
     }
